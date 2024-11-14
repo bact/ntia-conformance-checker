@@ -1,14 +1,15 @@
+# NTIA Conformance Checker
+
 [![Build Status](https://github.com/spdx/ntia-conformance-checker/workflows/build/badge.svg)](https://github.com/spdx/ntia-conformance-checker/actions)
 ![CodeQL](https://github.com/spdx/ntia-conformance-checker/actions/workflows/codeql.yml/badge.svg)
 [![PyPI version](https://badge.fury.io/py/ntia-conformance-checker.svg)](https://badge.fury.io/py/ntia-conformance-checker)
 [![Pylint Version](https://img.shields.io/badge/linting-pylint-yellow)](https://badge.fury.io/py/ntia-conformance-checker)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/spdx/ntia-conformance-checker/badge)](https://scorecard.dev/viewer/?uri=github.com/spdx/ntia-conformance-checker)
 
-# NTIA Conformance Checker
-
 This tool determines whether a [SPDX](https://spdx.dev/) software bill of materials (SBOM) document contains the National Telecommunications and Information Administration (NTIA) ["minimum elements."](https://www.ntia.doc.gov/files/ntia/publications/sbom_minimum_elements_report.pdf) The mapping of the NTIA elements required data fields to the SPDX specification can be found [here](https://spdx.github.io/spdx-spec/v2.3/how-to-use/#k22-mapping-ntia-minimum-elements-to-spdx-fields).
 
 The minimum elements include:
+
 - Supplier Name
 - Component Name
 - Version of the Component
@@ -40,7 +41,7 @@ up for testing using different versions of Python.
 
 ## CLI Usage
 
-```
+```text
 Usage: ntia-checker [OPTIONS]
 
 Options:
@@ -57,7 +58,7 @@ The user can then analyze a particular file:
 ntia-checker --file sbom.json
 ```
 
-To generare the output in machine-readable JSON, run:
+To generate the output in machine-readable JSON, run:
 
 ```bash
 ntia-checker --file sbom.spdx --output json
@@ -78,29 +79,29 @@ print(sbom.ntia_minimum_elements_compliant)
 
 Additional properties and methods associated with `SbomChecker()` can be found in [`sbom_checker.py`](ntia_conformance_checker/sbom_checker.py).
 
-# History
+## History
 
 This is the result of an initial [Google Summer of Code (GSoC)](https://summerofcode.withgoogle.com/) contribution in 2022 by
 [@linynjosh](https://github.com/linynjosh) and is maintained
 by a community of SPDX adopters and enthusiasts.
 
-# License
+## License
 
 [Apache-2.0](LICENSE)
 
-# Dependencies
+## Dependencies
 
-* [spdx-tools](https://pypi.org/project/spdx-tools/) used for parsing the SPDX SBOM.
+- [spdx-tools](https://pypi.org/project/spdx-tools/) used for parsing the SPDX SBOM.
 
-# Support
+## Support
 
-* Submit issues, questions or feedback at https://github.com/spdx/ntia-conformance-checker/issues
-* Join the discussion on https://lists.spdx.org/g/spdx-tech and https://spdx.dev/participate/tech/
+- Submit issues, questions or feedback at <https://github.com/spdx/ntia-conformance-checker/issues>
+- Join the discussion on <https://lists.spdx.org/g/spdx-tech> and <https://spdx.dev/participate/tech/>
 
-# Contributing
+## Contributing
 
 Contributions are very welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for instructions on how to contribute to the codebase.
 
-# Further help
+## Further help
 
 Check out the [frequently asked questions](FAQ.md) document.

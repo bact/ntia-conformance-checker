@@ -15,7 +15,7 @@ intention prior to creating a patch.
 
 ## Development process
 
-We use the GitHub flow that is described here: https://guides.github.com/introduction/flow/
+We use the GitHub flow that is described here: <https://guides.github.com/introduction/flow/>
 
 Here's the process to make changes to the codebase:
 
@@ -27,15 +27,17 @@ Here's the process to make changes to the codebase:
    revision. Work along similar lines may already be in progress.
 
 3. Create a new branch:
+
    ```sh
    git checkout -b fix-or-improve-something
    ```
-4. Make some changes and commit them to the branch:
+
+4. Make some changes and commit them to the branch,
+  with license sign off message:
+
    ```sh
    git commit --signoff -m 'description of my changes'
    ```
-
-   #### Licensing
 
    Please sign off in each of your commits that you license your contributions under the terms
    of [the Developer Certificate of Origin](https://developercertificate.org/). Git has utilities for signing off on
@@ -43,15 +45,21 @@ Here's the process to make changes to the codebase:
    retroactively signs a range of past commits.
 
 5. Test your changes:
+
    ```sh
    python setup.py test # in the repo root
    ```
+
    You may use other test runners, such as `pytest` or `nose` at your preference.
+
 6. Format your changes with [`black`](https://github.com/psf/black) and [`pylint`](https://github.com/pylint-dev/pylint).
+
 7. Push the branch to your fork on GitHub:
+
    ```sh
    git push origin fix-or-improve-something
    ```
+
 8. Make a pull request on GitHub.
 9. Continue making more changes and commits on the branch, with `git commit --signoff` and `git push`.
 10. When done, write a comment on the PR asking for a code review.
@@ -59,6 +67,7 @@ Here's the process to make changes to the codebase:
     possible, or with `squash`.
 12. The temporary branch on GitHub should be deleted (there is a button for deleting it).
 13. Delete the local branch as well:
+
     ```sh
     git checkout master
     git pull -p
@@ -70,7 +79,7 @@ Here's the process to make changes to the codebase:
 
 The tests framework is using pytest:
 
-```
+```sh
 pip install pytest
 pytest -vvs
 ```
