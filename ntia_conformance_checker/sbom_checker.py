@@ -8,9 +8,15 @@ import sys
 
 from spdx_tools.spdx.model import RelationshipType
 from spdx_tools.spdx.parser import parse_anything
-from spdx_tools.spdx.model.spdx_no_assertion import SpdxNoAssertion
 from spdx_tools.spdx.parser.error import SPDXParsingError
 from spdx_tools.spdx.validation.document_validator import validate_full_spdx_document
+
+from .util import (
+    get_components_without_identifiers,
+    get_components_without_names,
+    get_components_without_suppliers,
+    get_components_without_versions,
+)
 
 
 # pylint: disable=too-many-instance-attributes
@@ -81,42 +87,16 @@ class SbomChecker:
         return describes_package
 
     def get_components_without_names(self):
-        """Retrieve SPDX ID of components without names."""
-        components_without_names = []
-        for package in self.doc.packages:
-            if not package.name:
-                components_without_names.append(package.spdx_id)
-        return components_without_names
+        return get_components_without_names(self.doc)
 
     def get_components_without_versions(self, return_tuples=False):
-        """Retrieve name and/or SPDX ID of components without versions."""
-        components_without_versions = []
-        for package in self.doc.packages:
-            if not package.version:
-                if return_tuples:
-                    components_without_versions.append((package.name, package.spdx_id))
-                else:
-                    components_without_versions.append(package.name)
-        return components_without_versions
+        return get_components_without_versions(self.doc, return_tuples)
 
     def get_components_without_suppliers(self, return_tuples=False):
-        """Retrieve name and/or SPDX ID of components without suppliers."""
-        components_without_suppliers = []
-        for package in self.doc.packages:
-            no_supplier = package.supplier is None or isinstance(
-                package.supplier, SpdxNoAssertion
-            )
-            if no_supplier:
-                if return_tuples:
-                    components_without_suppliers.append((package.name, package.spdx_id))
-                else:
-                    components_without_suppliers.append(package.name)
-
-        return components_without_suppliers
+        return get_components_without_suppliers(self.doc, return_tuples)
 
     def get_components_without_identifiers(self):
-        """Retrieve name of components without identifiers."""
-        return [package.name for package in self.doc.packages if not package.spdx_id]
+        return get_components_without_identifiers(self.doc)
 
     def check_ntia_minimum_elements_compliance(self):
         """Check overall compliance with NTIA minimum elements."""
@@ -233,25 +213,25 @@ class SbomChecker:
             result["timestampProvided"] = self.doc_timestamp
             result["dependencyRelationshipsProvided"] = self.dependency_relationships
 
-            result["componentNames"][
-                "nonconformantComponents"
-            ] = self.components_without_names
+            result["componentNames"]["nonconformantComponents"] = (
+                self.components_without_names
+            )
             result["componentNames"]["allProvided"] = not self.components_without_names
-            result["componentVersions"][
-                "nonconformantComponents"
-            ] = self.components_without_versions
+            result["componentVersions"]["nonconformantComponents"] = (
+                self.components_without_versions
+            )
             result["componentVersions"][
                 "allProvided"
             ] = not self.components_without_versions
-            result["componentIdentifiers"][
-                "nonconformantComponents"
-            ] = self.components_without_identifiers
+            result["componentIdentifiers"]["nonconformantComponents"] = (
+                self.components_without_identifiers
+            )
             result["componentIdentifiers"][
                 "allProvided"
             ] = not self.components_without_identifiers
-            result["componentSuppliers"][
-                "nonconformantComponents"
-            ] = self.components_without_suppliers
+            result["componentSuppliers"]["nonconformantComponents"] = (
+                self.components_without_suppliers
+            )
             result["componentSuppliers"][
                 "allProvided"
             ] = not self.components_without_suppliers
