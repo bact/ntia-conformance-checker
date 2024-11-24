@@ -28,37 +28,37 @@ Here's the process to make changes to the codebase:
 
 3. Create a new branch:
 
-   ```sh
-   git checkout -b fix-or-improve-something
-   ```
+    ```sh
+    git checkout -b fix-or-improve-something
+    ```
 
 4. Make some changes and commit them to the branch,
-  with license sign off message:
+    with license sign off message:
 
-   ```sh
-   git commit --signoff -m 'description of my changes'
-   ```
+    ```sh
+    git commit --signoff -m 'description of my changes'
+    ```
 
-   Please sign off in each of your commits that you license your contributions under the terms
-   of [the Developer Certificate of Origin](https://developercertificate.org/). Git has utilities for signing off on
-   commits: `git commit -s` or `--signoff` signs a current commit, and `git rebase --signoff <revision-range>`
-   retroactively signs a range of past commits.
+    Please sign off in each of your commits that you license your contributions under the terms
+    of [the Developer Certificate of Origin](https://developercertificate.org/). Git has utilities for signing off on
+    commits: `git commit -s` or `--signoff` signs a current commit, and `git rebase --signoff <revision-range>`
+    retroactively signs a range of past commits.
 
 5. Test your changes:
 
-   ```sh
-   python setup.py test # in the repo root
-   ```
+    ```sh
+    python setup.py test # in the repo root
+    ```
 
-   You may use other test runners, such as `pytest` or `nose` at your preference.
+    You may use other test runners, such as `pytest` or `nose` at your preference.
 
 6. Format your changes with [`black`](https://github.com/psf/black) and [`pylint`](https://github.com/pylint-dev/pylint).
 
 7. Push the branch to your fork on GitHub:
 
-   ```sh
-   git push origin fix-or-improve-something
-   ```
+    ```sh
+    git push origin fix-or-improve-something
+    ```
 
 8. Make a pull request on GitHub.
 9. Continue making more changes and commits on the branch, with `git commit --signoff` and `git push`.
@@ -75,7 +75,7 @@ Here's the process to make changes to the codebase:
     git branch -d fix-or-improve-something
     ```
 
-# How to run tests
+## How to run tests
 
 The tests framework is using pytest:
 
