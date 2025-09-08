@@ -28,6 +28,38 @@ identifiers:
     description: >-
       This is the collection of archived snapshots of all
       versions of NTIA Conformance Checker.
+references:
+  - authors:
+      - family-names: Watt
+        given-names: Joshua
+    date-released: '2025-09-02'
+    repository-code: 'https://github.com/spdx/spdx-python-model'
+    title: spdx-python-model
+    type: software
+    version: 0.0.3
+  - authors:
+      - family-names: Ismail
+        given-names: Ahmed
+        name-particle: H.
+    date-released: '2024-09-30'
+    repository-code: 'https://github.com/spdx/tools-python'
+    title: tools-python
+    type: software
+    version: 0.8.3
+  - authors:
+      - name: 'National Telecommunications and Information Administration'
+    title: 'The Minimum Elements For a Software Bill of Materials'
+    type: government-document
+    url: 'https://www.ntia.gov/report/2021/minimum-elements-software-bill-materials-sbom'
+    month: 7
+    year: 2021
+  - authors:
+      - name: 'Cybersecurity and Infrastructure Security Agency'
+    title: 'Framing Software Component Transparency: Establishing a Common Software Bill of Materials'
+    type: government-document
+    url: 'https://www.cisa.gov/resources-tools/resources/framing-software-component-transparency-2024'
+    month: 9
+    year: 2024
 repository-code: 'https://github.com/spdx/ntia-conformance-checker'
 url: 'https://pypi.org/project/ntia-conformance-checker/'
 abstract: >-
