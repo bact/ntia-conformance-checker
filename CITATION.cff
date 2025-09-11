@@ -16,12 +16,12 @@ authors:
     name-particle: Speed
     email: johnmeyersster@gmail.com
     affiliation: Chainguard
-    orcid: 'https://orcid.org/0000-0003-2016-7695'
+    orcid: "https://orcid.org/0000-0003-2016-7695"
   - given-names: Arthit
     family-names: Suriyawongkul
     email: suriyawa@tcd.ie
-    affiliation: 'ADAPT Centre, Trinity College Dublin'
-    orcid: 'https://orcid.org/0000-0002-9698-1899'
+    affiliation: "ADAPT Centre, Trinity College Dublin"
+    orcid: "https://orcid.org/0000-0002-9698-1899"
 identifiers:
   - type: doi
     value: 10.5281/zenodo.17068670
@@ -32,8 +32,8 @@ references:
   - authors:
       - family-names: Watt
         given-names: Joshua
-    date-released: '2025-09-02'
-    repository-code: 'https://github.com/spdx/spdx-python-model'
+    date-released: "2025-09-02"
+    repository-code: "https://github.com/spdx/spdx-python-model"
     title: spdx-python-model
     type: software
     version: 0.0.3
@@ -41,27 +41,35 @@ references:
       - family-names: Ismail
         given-names: Ahmed
         name-particle: H.
-    date-released: '2024-09-30'
-    repository-code: 'https://github.com/spdx/tools-python'
+      - name: "SPDX contributors"
+    date-released: "2024-09-30"
+    repository-code: "https://github.com/spdx/tools-python"
     title: tools-python
     type: software
     version: 0.8.3
   - authors:
-      - name: 'National Telecommunications and Information Administration'
-    title: 'The Minimum Elements For a Software Bill of Materials'
+      - name: "National Telecommunications and Information Administration"
+    title: "The Minimum Elements For a Software Bill of Materials (SBOM)"
     type: government-document
-    url: 'https://www.ntia.gov/report/2021/minimum-elements-software-bill-materials-sbom'
+    url: "https://www.ntia.gov/report/2021/minimum-elements-software-bill-materials-sbom"
     month: 7
     year: 2021
   - authors:
-      - name: 'Cybersecurity and Infrastructure Security Agency'
-    title: 'Framing Software Component Transparency: Establishing a Common Software Bill of Materials'
+      - name: "Cybersecurity and Infrastructure Security Agency"
+    title: "Framing Software Component Transparency: Establishing a Common Software Bill of Materials (SBOM), Third Edition"
     type: government-document
-    url: 'https://www.cisa.gov/resources-tools/resources/framing-software-component-transparency-2024'
+    url: "https://www.cisa.gov/resources-tools/resources/framing-software-component-transparency-2024"
     month: 9
     year: 2024
-repository-code: 'https://github.com/spdx/ntia-conformance-checker'
-url: 'https://pypi.org/project/ntia-conformance-checker/'
+  - authors:
+      - name: "Cybersecurity and Infrastructure Security Agency"
+    title: "2025 Minimum Elements for a Software Bill of Materials (SBOM) (Public Comment Draft)"
+    type: government-document
+    url: "https://www.cisa.gov/resources-tools/resources/2025-minimum-elements-software-bill-materials-sbom"
+    month: 8
+    year: 2025
+repository-code: "https://github.com/spdx/ntia-conformance-checker"
+url: "https://pypi.org/project/ntia-conformance-checker/"
 abstract: >-
   This software is an SPDX Software Bill of Materials (SBOM)
   validator that checks for NTIA minimum elements and CISA
@@ -74,8 +82,11 @@ keywords:
   - SBOM
   - software bill of materials
   - conformance
+  - compliance
+  - validation
   - SPDX
   - minimum elements
+  - baseline attributes
   - software package data exchange
   - software component transparency
   - NTIA
@@ -83,4 +94,4 @@ keywords:
 license: Apache-2.0
 commit: 0ea788768fc39f0eacf9c9300c75a328799fbbd3
 version: 4.0.0
-date-released: '2025-09-05'
+date-released: "2025-09-05"
