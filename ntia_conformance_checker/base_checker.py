@@ -107,9 +107,15 @@ class BaseChecker(ABC):
 
     compliant: bool = False  # Is SBOM compliant with the chosen standard?
 
-    # An alias of "compliant", for backward compatibility.
-    # Note: Subclasses should set this to self.compliant in their __init__ or check_compliance methods.
-    ntia_minimum_elements_compliant: bool = False
+    @property
+    def ntia_minimum_elements_compliant(self) -> bool:
+        """Alias of 'compliant' for backward compatibility."""
+        return self.compliant
+
+    @ntia_minimum_elements_compliant.setter
+    def ntia_minimum_elements_compliant(self, value: bool) -> None:
+        """Setter for ntia_minimum_elements_compliant that updates compliant."""
+        self.compliant = value
 
     @abstractmethod
     def check_compliance(self) -> bool:
