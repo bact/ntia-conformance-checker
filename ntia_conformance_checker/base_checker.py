@@ -107,8 +107,9 @@ class BaseChecker(ABC):
 
     compliant: bool = False  # Is SBOM compliant with the chosen standard?
 
-    # An alias of "compliant", for backward compatibility
-    ntia_minimum_elements_compliant: bool = compliant
+    # An alias of "compliant", for backward compatibility.
+    # Note: Subclasses should set this to self.compliant in their __init__ or check_compliance methods.
+    ntia_minimum_elements_compliant: bool = False
 
     @abstractmethod
     def check_compliance(self) -> bool:
@@ -698,6 +699,14 @@ class BaseChecker(ABC):
             doc = parse_anything.parse_file(self.file)
         except SPDXParsingError as err:
             self.parsing_error.extend(err.get_messages())
+            return None
+        except Exception as err:
+            # Catch any other errors, including beartype violations from spdx-tools
+            # when parsing invalid SPDX files (e.g., missing required fields)
+            logging.debug("Error parsing file: %s", err)
+            self.parsing_error.append(
+                f"Error parsing file: {type(err).__name__}: {str(err)}"
+            )
             return None
 
         return cast("Document", doc)
