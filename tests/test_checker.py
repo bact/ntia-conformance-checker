@@ -49,7 +49,7 @@ def test_sbomchecker_ntia_no_errors(test_file):
     assert not sbom.components_without_suppliers
     assert not sbom.components_without_identifiers
     assert sbom.compliant
-    assert sbom.ntia_minimum_elements_compliant
+    assert sbom.compliant
 
 
 @pytest.mark.parametrize("test_file", test_files)
@@ -81,7 +81,7 @@ def test_ntiachecker_no_errors(test_file):
     assert not sbom.components_without_suppliers
     assert not sbom.components_without_identifiers
     assert sbom.compliant
-    assert sbom.ntia_minimum_elements_compliant
+    assert sbom.compliant
 
 
 @pytest.mark.parametrize("test_file", test_files)
@@ -114,7 +114,7 @@ def test_sbomchecker_missing_author_name(test_file):
     the document does not contain a creator."""
     sbom_check = sbom_checker.SbomChecker(test_file)
 
-    assert not sbom_check.ntia_minimum_elements_compliant
+    assert not sbom_check.compliant
     assert sbom_check.parsing_error
 
 
@@ -130,7 +130,7 @@ def test_sbomchecker_missing_timestamp(test_file):
     the document does not contain a created date."""
     sbom_check = sbom_checker.SbomChecker(test_file)
 
-    assert not sbom_check.ntia_minimum_elements_compliant
+    assert not sbom_check.compliant
     assert sbom_check.parsing_error
 
 
@@ -173,7 +173,7 @@ def test_sbomchecker_missing_dependency_relationships(test_file):
     assert not sbom.components_without_suppliers
     assert not sbom.components_without_identifiers
     assert not sbom.compliant
-    assert not sbom.ntia_minimum_elements_compliant
+    assert not sbom.compliant
 
 
 ### Test missing component version
@@ -199,7 +199,7 @@ def test_sbomchecker_missing_component_version(test_file):
     assert not sbom.components_without_suppliers
     assert not sbom.components_without_identifiers
     assert not sbom.compliant
-    assert not sbom.ntia_minimum_elements_compliant
+    assert not sbom.compliant
 
 
 ### Test missing supplier name
@@ -224,7 +224,7 @@ def test_sbomchecker_missing_supplier_name(test_file):
     )
     assert not sbom.components_without_identifiers
     assert not sbom.compliant
-    assert not sbom.ntia_minimum_elements_compliant
+    assert not sbom.compliant
 
 
 ### Test missing unique identifiers
@@ -242,7 +242,7 @@ def test_sbomchecker_missing_unique_identifiers(test_file):
     sbom_check = sbom_checker.SbomChecker(test_file)
 
     assert not sbom_check.compliant
-    assert not sbom_check.ntia_minimum_elements_compliant
+    assert not sbom_check.compliant
     assert sbom_check.parsing_error
 
 
@@ -288,7 +288,7 @@ def test_sbomchecker_chainguard_example():
     )
     sbom = sbom_checker.SbomChecker(test_file)
     assert sbom.compliant
-    assert sbom.ntia_minimum_elements_compliant
+    assert sbom.compliant
 
 
 def test_sbomchecker_alpine_no_package_supplier_name_example():
