@@ -199,7 +199,6 @@ def test_sbomchecker_missing_component_version(test_file):
     assert not sbom.components_without_suppliers
     assert not sbom.components_without_identifiers
     assert not sbom.compliant
-    assert not sbom.compliant
 
 
 ### Test missing supplier name
@@ -224,7 +223,6 @@ def test_sbomchecker_missing_supplier_name(test_file):
     )
     assert not sbom.components_without_identifiers
     assert not sbom.compliant
-    assert not sbom.compliant
 
 
 ### Test missing unique identifiers
@@ -241,7 +239,6 @@ def test_sbomchecker_missing_unique_identifiers(test_file):
     the document contains an element without SPDXID."""
     sbom_check = sbom_checker.SbomChecker(test_file)
 
-    assert not sbom_check.compliant
     assert not sbom_check.compliant
     assert sbom_check.parsing_error
 
