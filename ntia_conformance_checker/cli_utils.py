@@ -182,8 +182,11 @@ def get_spdx_version(file: str, sbom_spec: str = "spdx2") -> tuple[int, int] | N
             logging.debug("Detect SPDX version: spdx_tools parser failed: %s", exc)
             doc = None
         except Exception as exc:
-            # Catch any other errors, including beartype violations from spdx-tools
-            # when parsing invalid SPDX files (e.g., missing required fields)
+            # Catch any other errors, including BeartypeCallHintParamViolation
+            # from the spdx-tools library when parsing invalid SPDX files.
+            # The spdx-tools library uses beartype for runtime type checking,
+            # which throws exceptions when encountering missing required fields
+            # (e.g., missing author, timestamp, or identifiers).
             logging.debug(
                 "Detect SPDX version: Unexpected error while parsing with spdx_tools: %s",
                 exc,
