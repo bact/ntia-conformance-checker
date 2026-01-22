@@ -221,3 +221,133 @@ def test_basechecker_get_total_number_components_no_packages():
         checker.doc.packages = []
         result = checker.get_total_number_components()
         assert result == 0
+
+
+def test_basechecker_check_compliance_not_implemented():
+    """Test that check_compliance raises NotImplementedError in base class"""
+    test_file = Path(__file__).parent / "data" / "no_elements_missing" / "SPDXJSONExample-v2.3.spdx.json"
+    checker = NTIAChecker(str(test_file))
+    
+    # Try to call the abstract method directly on BaseChecker
+    # This is covered by the abstract class test, but we verify the implementation
+    with pytest.raises(NotImplementedError):
+        BaseChecker.check_compliance(checker)
+
+
+def test_basechecker_spdx3_failed_parse():
+    """Test SPDX3 file that fails to parse"""
+    # Create a file that will fail SPDX3 parsing with a different error
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        # Write invalid content that will trigger a JSONDecodeError
+        f.write('not valid json at all')
+        temp_file = f.name
+    
+    try:
+        from ntia_conformance_checker import sbom_checker
+        # This should trigger the parse error handling
+        checker = sbom_checker.SbomChecker(temp_file, sbom_spec="spdx3")
+        # The doc should be None because parsing failed
+        assert checker.doc is None
+        # Should have parsing errors
+        assert len(checker.parsing_error) > 0
+    finally:
+        os.unlink(temp_file)
+
+
+def test_basechecker_get_sbom_name_no_doc():
+    """Test get_sbom_name when doc is None"""
+    test_file = Path(__file__).parent / "data" / "no_elements_missing" / "SPDXJSONExample-v2.3.spdx.json"
+    checker = NTIAChecker(str(test_file))
+    
+    # Manually set doc to None
+    checker.doc = None
+    result = checker.get_sbom_name()
+    assert result == ""
+
+
+def test_basechecker_get_components_without_concluded_licenses_no_doc():
+    """Test get_components_without_concluded_licenses when doc is None"""
+    test_file = Path(__file__).parent / "data" / "no_elements_missing" / "SPDXJSONExample-v2.3.spdx.json"
+    checker = NTIAChecker(str(test_file))
+    
+    # Manually set doc to None
+    checker.doc = None
+    result = checker.get_components_without_concluded_licenses()
+    assert result == []
+
+
+def test_basechecker_get_components_without_copyright_texts_no_doc():
+    """Test get_components_without_copyright_texts when doc is None"""
+    test_file = Path(__file__).parent / "data" / "no_elements_missing" / "SPDXJSONExample-v2.3.spdx.json"
+    checker = NTIAChecker(str(test_file))
+    
+    # Manually set doc to None
+    checker.doc = None
+    result = checker.get_components_without_copyright_texts()
+    assert result == []
+
+
+def test_basechecker_get_components_without_identifiers_no_doc():
+    """Test get_components_without_identifiers when doc is None"""
+    test_file = Path(__file__).parent / "data" / "no_elements_missing" / "SPDXJSONExample-v2.3.spdx.json"
+    checker = NTIAChecker(str(test_file))
+    
+    # Manually set doc to None
+    checker.doc = None
+    result = checker.get_components_without_identifiers()
+    assert result == []
+
+
+def test_basechecker_get_components_without_names_no_doc():
+    """Test get_components_without_names when doc is None"""
+    test_file = Path(__file__).parent / "data" / "no_elements_missing" / "SPDXJSONExample-v2.3.spdx.json"
+    checker = NTIAChecker(str(test_file))
+    
+    # Manually set doc to None
+    checker.doc = None
+    result = checker.get_components_without_names()
+    assert result == []
+
+
+def test_basechecker_get_components_without_suppliers_no_doc():
+    """Test get_components_without_suppliers when doc is None"""
+    test_file = Path(__file__).parent / "data" / "no_elements_missing" / "SPDXJSONExample-v2.3.spdx.json"
+    checker = NTIAChecker(str(test_file))
+    
+    # Manually set doc to None
+    checker.doc = None
+    result = checker.get_components_without_suppliers()
+    assert result == []
+
+
+def test_basechecker_get_components_without_versions_no_doc():
+    """Test get_components_without_versions when doc is None"""
+    test_file = Path(__file__).parent / "data" / "no_elements_missing" / "SPDXJSONExample-v2.3.spdx.json"
+    checker = NTIAChecker(str(test_file))
+    
+    # Manually set doc to None
+    checker.doc = None
+    result = checker.get_components_without_versions()
+    assert result == []
+
+
+def test_basechecker_get_all_components_without_info_no_doc():
+    """Test _get_all_components_without_info when doc is None"""
+    test_file = Path(__file__).parent / "data" / "no_elements_missing" / "SPDXJSONExample-v2.3.spdx.json"
+    checker = NTIAChecker(str(test_file))
+    
+    # Manually set doc to None
+    checker.doc = None
+    result = checker._get_all_components_without_info()
+    assert result == []
+
+
+def test_basechecker_get_doc_spec_version_returns_none():
+    """Test get_doc_spec_version when it returns None"""
+    test_file = Path(__file__).parent / "data" / "no_elements_missing" / "SPDXJSONExample-v2.3.spdx.json"
+    checker = NTIAChecker(str(test_file))
+    
+    # Manually set doc to None
+    checker.doc = None
+    result = checker.get_doc_spec_version()
+    assert result is None
