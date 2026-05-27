@@ -74,7 +74,7 @@ class G7AIChecker(BaseAIDataChecker):
         file: str,
         validate: bool = True,
         compliance: str = "g7ai",
-        sbom_spec: str = "spdx2",
+        sbom_spec: str = "spdx3",
     ) -> None:
         """
         Initialize the G7 AI SBOM Minimum Elements checker.
