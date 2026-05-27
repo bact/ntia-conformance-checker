@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 SPDX contributors
+# SPDX-FileCopyrightText: 2025-present SPDX contributors
 # SPDX-FileType: SOURCE
 # SPDX-License-Identifier: Apache-2.0
 
@@ -15,6 +15,8 @@ SUPPORTED_COMPLIANCE_STANDARDS_DESC = {
     # "cisasbom2025": "2025 CISA SBOM Minimum Elements",
     # https://www.cisa.gov/resources-tools/resources/2025-minimum-elements-software-bill-materials-sbom
     "fsct3-min": "2024 CISA Framing Software Component Transparency (minimum expectation)",
+    # https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/KI/SBOM-for-AI_minimum-elements.html
+    "g7ai": "2026 G7 SBOM for AI - Minimum Elements",
     "ntia": "2021 NTIA SBOM Minimum Elements",
 }
 DEFAULT_COMPLIANCE_STANDARD = "ntia"

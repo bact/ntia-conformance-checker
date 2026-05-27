@@ -460,7 +460,7 @@ def test_sbomchecker_output_html() -> None:
         "<p class='conformance-mis-label'>"
         "Missing required information in these components:</p>\n"
         "<ul class='conformance-mis-list'>\n"
-        "<li>supplier (3): xyz, curl, openssl</li>\n"
+        "<li>Components missing a supplier (3): xyz, curl, openssl</li>\n"
         "</ul>\n"
         "</div>"
     )
@@ -511,8 +511,8 @@ def test_sbomchecker_fsct3_output_html() -> None:
         "<p class='conformance-mis-label'>"
         "Missing required information in these components:</p>\n"
         "<ul class='conformance-mis-list'>\n"
-        "<li>supplier (3): xyz, curl, openssl</li>\n"
-        "<li>concluded_license (3): xyz, curl, openssl</li>\n"
+        "<li>Components missing a supplier (3): xyz, curl, openssl</li>\n"
+        "<li>Components missing a concluded license (3): xyz, curl, openssl</li>\n"
         "</ul>\n"
         "</div>"
     )

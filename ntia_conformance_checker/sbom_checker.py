@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2024 SPDX contributors
+# SPDX-FileCopyrightText: 2024-present SPDX contributors
 # SPDX-FileType: SOURCE
 # SPDX-License-Identifier: Apache-2.0
 
@@ -71,6 +71,12 @@ class SbomChecker(BaseChecker):
             from .fsct_checker import FSCT3Checker
 
             return FSCT3Checker(file, validate, sbom_spec=sbom_spec)
+
+        if compliance == "g7ai":
+            # pylint: disable=import-outside-toplevel
+            from .g7ai_checker import G7AIChecker
+
+            return G7AIChecker(file, validate, sbom_spec=sbom_spec)
 
         raise ValueError(f"Unknown compliance standard: {compliance}")
 

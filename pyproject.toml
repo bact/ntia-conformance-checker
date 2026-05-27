@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2024-2026 SPDX contributors
+# SPDX-FileCopyrightText: 2024-present SPDX contributors
 # SPDX-FileType: SOURCE
 # SPDX-License-Identifier: Apache-2.0
 
@@ -22,11 +22,12 @@ maintainers = [
     { name = "SPDX group at the Linux Foundation and others", email = "spdx-implementers+owner@lists.spdx.org" },
 ]
 license = "Apache-2.0"
-description = "Check SPDX SBOM for NTIA minimum elements and CISA baseline attributes"
+description = "Check SPDX SBOM for NTIA minimum elements, CISA baseline attributes, and G7 SBOM for AI minimum elements."
 readme = "README.md"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
+    "Intended Audience :: Legal Industry",
     "Intended Audience :: System Administrators",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -43,6 +44,7 @@ keywords = [
     "sbom",
     "ntia",
     "cisa",
+    "aibom",
     "minimum elements",
     "baseline attributes",
     "software bill of materials",

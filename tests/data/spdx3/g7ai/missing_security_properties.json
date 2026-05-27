@@ -1,0 +1,105 @@
+{
+  "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+  "@graph": [
+    {
+      "type": "CreationInfo",
+      "@id": "_:g7ai-creationinfo",
+      "specVersion": "3.0.1",
+      "createdBy": [
+        "https://spdx.org/spdxdocs/g7ai-tests/Person1"
+      ],
+      "created": "2025-01-01T00:00:00Z"
+    },
+    {
+      "type": "Person",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/Person1",
+      "creationInfo": "_:g7ai-creationinfo",
+      "name": "Test User"
+    },
+    {
+      "type": "Organization",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/Supplier1",
+      "creationInfo": "_:g7ai-creationinfo",
+      "name": "Test Supplier"
+    },
+    {
+      "type": "SpdxDocument",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/Document1",
+      "creationInfo": "_:g7ai-creationinfo",
+      "name": "G7 AI SBOM Test - Missing security properties",
+      "profileConformance": [
+        "core",
+        "software",
+        "ai",
+        "dataset"
+      ],
+      "rootElement": [
+        "https://spdx.org/spdxdocs/g7ai-tests/SBOM1"
+      ]
+    },
+    {
+      "type": "software_Sbom",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/SBOM1",
+      "creationInfo": "_:g7ai-creationinfo",
+      "name": "G7 AI SBOM",
+      "software_sbomType": [
+        "analyzed"
+      ],
+      "rootElement": [
+        "https://spdx.org/spdxdocs/g7ai-tests/AIPackage1"
+      ]
+    },
+    {
+      "type": "ai_AIPackage",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/AIPackage1",
+      "creationInfo": "_:g7ai-creationinfo",
+      "name": "Test AI Model",
+      "description": "A test AI model for security cluster testing.",
+      "summary": "AI model summary.",
+      "software_packageVersion": "1.0.0",
+      "suppliedBy": "https://spdx.org/spdxdocs/g7ai-tests/Supplier1",
+      "builtTime": "2024-12-01T00:00:00Z",
+      "ai_typeOfModel": [
+        "neural-network"
+      ],
+      "ai_domain": [
+        "computer-vision"
+      ],
+      "ai_useSensitivePersonalInformation": "no",
+      "software_primaryPurpose": "application",
+      "software_copyrightText": "Copyright Test Supplier",
+      "software_downloadLocation": "https://example.com/model",
+      "verifiedUsing": [
+        {
+          "type": "Hash",
+          "algorithm": "sha256",
+          "hashValue": "a948904f2f0f479b8f936a03b89d6f55b9e4c3f7ef4c6de012d4c5d10a8c9e00"
+        }
+      ]
+    },
+    {
+      "type": "dataset_DatasetPackage",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/DatasetPackage1",
+      "creationInfo": "_:g7ai-creationinfo",
+      "name": "Test Training Dataset",
+      "description": "A test training dataset.",
+      "software_packageVersion": "2024-01",
+      "suppliedBy": "https://spdx.org/spdxdocs/g7ai-tests/Supplier1",
+      "dataset_datasetType": [
+        "image"
+      ],
+      "dataset_hasSensitivePersonalInformation": "no",
+      "dataset_dataCollectionProcess": "Collected from public image repositories.",
+      "software_primaryPurpose": "data",
+      "software_copyrightText": "Copyright Test Supplier",
+      "software_downloadLocation": "https://example.com/dataset",
+      "verifiedUsing": [
+        {
+          "type": "Hash",
+          "algorithm": "sha256",
+          "hashValue": "b123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        }
+      ]
+    }
+  ]
+}
