@@ -103,6 +103,45 @@ class BaseAIDataChecker(BaseChecker):
     dataset_packages_without_hash: list[tuple[str, str]] = []
     dataset_packages_without_description: list[tuple[str, str]] = []
 
+    def __init__(
+        self,
+        file: str,
+        validate: bool = True,
+        compliance: str = "",
+        sbom_spec: str = "spdx3",
+    ) -> None:
+        super().__init__(
+            file=file, validate=validate, compliance=compliance, sbom_spec=sbom_spec
+        )
+        if self.doc:
+            self.ai_packages_without_type_of_model = (
+                self.get_ai_packages_without_type_of_model()
+            )
+            self.ai_packages_without_domain = self.get_ai_packages_without_domain()
+            self.ai_packages_without_sensitive_data_info = (
+                self.get_ai_packages_without_sensitive_data_info()
+            )
+            self.ai_packages_without_hash = self.get_ai_packages_without_hash()
+            self.ai_packages_without_description = (
+                self.get_ai_packages_without_description()
+            )
+            self.ai_packages_without_timestamp = (
+                self.get_ai_packages_without_timestamp()
+            )
+            self.dataset_packages_without_dataset_type = (
+                self.get_dataset_packages_without_dataset_type()
+            )
+            self.dataset_packages_without_sensitive_info = (
+                self.get_dataset_packages_without_sensitive_info()
+            )
+            self.dataset_packages_without_provenance = (
+                self.get_dataset_packages_without_provenance()
+            )
+            self.dataset_packages_without_hash = self.get_dataset_packages_without_hash()
+            self.dataset_packages_without_description = (
+                self.get_dataset_packages_without_description()
+            )
+
     # ------------------------------------------------------------------
     # AI package checks (spdx-ai profile, SPDX 3 only)
     # ------------------------------------------------------------------

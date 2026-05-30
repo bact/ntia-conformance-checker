@@ -106,9 +106,6 @@ class BaseChecker(ABC):
     doc_timestamp: bool = False  # Has SPDX document creation timestamp?
     dependency_relationships: bool = False  # Has DESCRIBES relationship?
 
-    # Document-level SBOM generation context (SPDX 3 only)
-    sbom_generation_context: bool = False
-
     compliant: bool = False  # Is SBOM compliant with the chosen standard?
 
     @property
@@ -201,6 +198,7 @@ class BaseChecker(ABC):
                     pass
 
             self.sbom_name = self.get_sbom_name()
+            self.sbom_gen_context = self.get_sbom_types()
 
             self.doc_version = self.check_doc_version()
             self.doc_author = self.check_author()
@@ -675,22 +673,26 @@ class BaseChecker(ABC):
     # Document-level SBOM checks (SPDX 3 only)
     # ------------------------------------------------------------------
 
-    def check_sbom_generation_context(self) -> bool:
-        """Check whether the SBOM document declares a generation context.
+    def get_sbom_types(self) -> list[str]:
+        """Get SBOM types declared in any ``/Software/Sbom`` element.
 
-        Maps to G7 "SBOM generation context" via ``software_Sbom.software_sbomType``.
+        CISA Framing Software Component Transparency (2024) and G7 SBOM for AI
+        both require an SBOM generation context, expressed via
+        ``software_Sbom.software_sbomType``.
 
         Returns:
-            bool: True if any ``software_Sbom`` element has a non-empty
-            ``software_sbomType`` list, False otherwise (including SPDX 2).
+            list[str]: Distinct SBOM type strings found across all
+            ``/Software/Sbom`` elements; empty for SPDX 2 or when none present.
         """
         if not self.doc or self.sbom_spec != "spdx3":
-            return False
+            return []
         doc = cast("spdx3.SHACLObjectSet", self.doc)
+        types: list[str] = []
         for obj in doc.foreach_type(spdx3.software_Sbom):
-            if getattr(obj, "software_sbomType", None):
-                return True
-        return False
+            types.extend(
+                t.strip() for t in getattr(obj, "software_sbomType", []) if t
+            )
+        return types
 
     def _get_all_components_without_info(
         self,
