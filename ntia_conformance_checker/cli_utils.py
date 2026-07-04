@@ -34,6 +34,8 @@ if TYPE_CHECKING:
 _OUTPUT_CHOICES = {
     "print": "Report in regular text format",
     "json": "Report in JSON format",
+    "sarif": "Report in SARIF format",
+    "sarif-sbom": "SARIF format with the input SBOM embedded",
     "html": "Report in HTML format",
     "none": "No report",
 }
@@ -331,6 +333,17 @@ def print_output(
                     json.dump(result_dict, outfile)
             else:
                 print(json.dumps(result_dict, indent=2))
+
+        case "sarif" | "sarif-sbom":
+            embed = output_type == "sarif-sbom"
+            sarif_dict: dict[str, Any] = sbom.output_sarif(
+                embed_sbom=embed, maturity=maturity
+            )
+            if output_file:
+                with open(output_file, "w", encoding="utf-8") as outfile:
+                    json.dump(sarif_dict, outfile, indent=2)
+            else:
+                print(json.dumps(sarif_dict, indent=2))
 
         case "html":
             html_output = sbom.output_html(maturity=maturity)

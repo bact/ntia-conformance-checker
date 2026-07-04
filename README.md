@@ -128,6 +128,8 @@ choices:
     json        Report in JSON format
     none        No report
     print       Report in regular text format
+    sarif       Report in SARIF format
+    sarif-sbom  SARIF format with the input SBOM embedded
 
 Examples:
   sbomcheck sbom.spdx
@@ -146,6 +148,17 @@ To generate the output in machine-readable JSON, run:
 ```bash
 sbomcheck sbom.spdx --output json
 ```
+
+To generate the output in [SARIF][sarif] format, run:
+
+```bash
+sbomcheck sbom.spdx --output sarif
+sbomcheck sbom.spdx --output sarif --output-file report.sarif
+sbomcheck sbom.spdx --output sarif-sbom
+```
+
+The `sarif-sbom` output type embeds the input SBOM contents in the SARIF
+output.
 
 To analyze an SPDX 3 JSON file, run:
 
@@ -254,3 +267,4 @@ Check out the [frequently asked questions](./FAQ.md) document.
 [fsct3]: https://www.cisa.gov/resources-tools/resources/framing-software-component-transparency-2024
 [sbom-reqs]: https://drive.google.com/file/d/14HZGYD7pSSWEmtaHZzWrzPhxCXaCnloJ/view
 [pypi]: https://pypi.org/project/ntia-conformance-checker/
+[sarif]: https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html

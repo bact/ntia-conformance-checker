@@ -28,6 +28,9 @@ declarative rule engine to enhance extensibility.
 - `-m`/`--mature N` to assess against a target maturity level. No shipped
   rule currently declares a non-zero maturity, so this has no observable
   effect yet on `ntia`/`fsct3`; it scaffolds future per-tier rules
+- SARIF output via `output_sarif()` and `--output sarif`/`sarif-sbom`
+- Stable rule ids `SBOM-[SPEC]-[CATEGORY]-[NNN]` (e.g. `SBOM-NTIA-DF-001`),
+  derived from each rule's slug
 
 ### Changed
 

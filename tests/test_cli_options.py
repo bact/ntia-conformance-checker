@@ -66,8 +66,9 @@ def test_output_quiet_aliases_to_none(monkeypatch: MonkeyPatch) -> None:
     assert _parse(monkeypatch, ["f.json", "--output", "quiet"]).output == "none"
 
 
-def test_output_none_accepted(monkeypatch: MonkeyPatch) -> None:
+def test_output_none_and_sarif_sbom_accepted(monkeypatch: MonkeyPatch) -> None:
     assert _parse(monkeypatch, ["f.json", "-r", "none"]).output == "none"
+    assert _parse(monkeypatch, ["f.json", "-r", "sarif-sbom"]).output == "sarif-sbom"
 
 
 def test_output_invalid_exits(monkeypatch: MonkeyPatch) -> None:

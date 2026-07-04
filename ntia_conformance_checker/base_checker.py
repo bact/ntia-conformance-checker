@@ -1064,3 +1064,33 @@ class BaseChecker(DeprecatedCheckerMixin, ABC):
                 }
 
         return result
+
+    def output_sarif(
+        self, *, embed_sbom: bool = False, maturity: int = 0
+    ) -> dict[str, Any]:
+        """
+        Create a SARIF result log.
+
+        The output uses ``SBOM-[SPEC]-[CATEGORY]-[NNN]`` rule ids (see
+        :file:`RULES.md`).  Identifiers are chosen so the same strings can be
+        reused by a future OSCAL exporter as ``control`` / ``group`` ids
+        without remapping.
+
+        Args:
+            embed_sbom: When ``True``, embed the source SBOM file content in
+                ``runs[0].artifacts[0].contents`` so downstream SARIF viewers
+                can render the artifact alongside results from a single log
+                file.  Default is ``False`` (link by URI only) -- embedding
+                significantly increases the log size.
+            maturity: Maturity level to scope results to; defaults to ``0``
+                (the baseline).  The rule catalogue always lists every non-TBD
+                rule regardless of maturity; only *results* are scoped.
+
+        Subclasses may override to provide custom fields.
+        """
+        # Imported lazily so that the SARIF module isn't loaded for
+        # tools that only call output_json.
+        # pylint: disable=import-outside-toplevel
+        from .report_sarif import build_sarif
+
+        return build_sarif(self, embed_sbom=embed_sbom, maturity=maturity)
