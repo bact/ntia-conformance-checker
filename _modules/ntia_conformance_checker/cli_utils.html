@@ -63,12 +63,18 @@
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.base_checker</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseChecker</span>
 
+<span class="c1"># Advertised report output types (shown in --help / README).</span>
 <span class="n">_OUTPUT_CHOICES</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;print&quot;</span><span class="p">:</span> <span class="s2">&quot;Print report to console&quot;</span><span class="p">,</span>
     <span class="s2">&quot;json&quot;</span><span class="p">:</span> <span class="s2">&quot;Report in JSON format&quot;</span><span class="p">,</span>
     <span class="s2">&quot;html&quot;</span><span class="p">:</span> <span class="s2">&quot;Report in HTML format&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;quiet&quot;</span><span class="p">:</span> <span class="s2">&quot;No output unless there are errors&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;none&quot;</span><span class="p">:</span> <span class="s2">&quot;No report&quot;</span><span class="p">,</span>
 <span class="p">}</span>
+
+<span class="c1"># Accepted but undocumented (backward compatibility): &quot;quiet&quot; is the old name</span>
+<span class="c1"># for &quot;none&quot; -- &quot;quiet&quot; is now reserved for log verbosity (-q/--quiet).</span>
+<span class="n">_OUTPUT_ALIASES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;quiet&quot;</span><span class="p">:</span> <span class="s2">&quot;none&quot;</span><span class="p">}</span>
+<span class="n">_OUTPUT_ALLOWED</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">_OUTPUT_CHOICES</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">_OUTPUT_ALIASES</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="get_parsed_args">
@@ -137,6 +143,7 @@
         <span class="n">help</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">SUPPRESS</span><span class="p">,</span>  <span class="c1"># hide from help</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-k&quot;</span><span class="p">,</span>
         <span class="s2">&quot;--skip-validation&quot;</span><span class="p">,</span>
         <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -145,7 +152,7 @@
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s2">&quot;-r&quot;</span><span class="p">,</span>
         <span class="s2">&quot;--output&quot;</span><span class="p">,</span>
-        <span class="n">choices</span><span class="o">=</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_OUTPUT_CHOICES</span><span class="p">),</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TYPE&quot;</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="s2">&quot;print&quot;</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Report output type; see below for details [default: print]&quot;</span><span class="p">,</span>
     <span class="p">)</span>
@@ -163,8 +170,22 @@
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s2">&quot;-v&quot;</span><span class="p">,</span>
         <span class="s2">&quot;--verbose&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;count&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Increase log verbosity: -v = info, -vv = debug&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--debug&quot;</span><span class="p">,</span>
         <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Print more information (debug)&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Set log verbosity to debug (same as -vv)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-q&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--quiet&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Quiet logs: show errors only&quot;</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s2">&quot;-V&quot;</span><span class="p">,</span>
@@ -174,6 +195,15 @@
     <span class="p">)</span>
 
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># Normalise the report output type: map undocumented aliases and validate.</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">output</span> <span class="ow">in</span> <span class="n">_OUTPUT_ALIASES</span><span class="p">:</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">_OUTPUT_ALIASES</span><span class="p">[</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">output</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_OUTPUT_CHOICES</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;argument -r/--output: invalid choice: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;(choose from </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_OUTPUT_CHOICES</span><span class="p">))</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;file_opt&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
         <span class="n">args</span><span class="o">.</span><span class="n">file</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">file_opt</span>
@@ -354,7 +384,7 @@
                 <span class="nb">print</span><span class="p">(</span><span class="n">html_output</span><span class="p">)</span></div>
 
 
-    <span class="c1"># do nothing if output_type is &quot;quiet&quot; or unrecognized</span>
+    <span class="c1"># &quot;none&quot; (and its legacy alias &quot;quiet&quot;) emit no report.</span>
 </pre></div>
 
           </div>
