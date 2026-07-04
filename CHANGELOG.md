@@ -19,10 +19,8 @@ declarative rule engine to enhance extensibility.
 
 ### Added
 
-<!-- TODO: replace with [#NNN] link once this PR is opened -->
-
 - `-v`/`-vv`/`--debug` log verbosity levels and `-q`/`--quiet` to show
-  errors only; `-k` short flag for `--skip-validation`
+  errors only; `-k` short flag for `--skip-validation` ([#406])
 - Declarative rule engine: each compliance standard is a `rules/<spec_id>.yaml`
   file; adding a standard no longer requires a Python subclass
 - `-m`/`--mature N` to assess against a target maturity level. No shipped
@@ -35,9 +33,9 @@ declarative rule engine to enhance extensibility.
 ### Changed
 
 - BREAKING CHANGE: Default log level is now `WARNING` (previously `INFO`);
-  use `-v` to restore the old default verbosity
+  use `-v` to restore the old default verbosity ([#406])
 - `--output quiet` renamed to `--output none` (`quiet` still accepted;
-  the name is now reserved for log verbosity)
+  the name is now reserved for log verbosity) ([#406])
 - `compliance` argument now also accepts a `Spec` object in addition to a
   spec id string
 
@@ -55,6 +53,7 @@ declarative rule engine to enhance extensibility.
   ([#398])
 
 [#398]: https://github.com/spdx/ntia-conformance-checker/pull/398
+[#406]: https://github.com/spdx/ntia-conformance-checker/pull/406
 
 ## [5.0.3] - 2026-06-02
 
