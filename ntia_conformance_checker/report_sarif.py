@@ -31,10 +31,9 @@ from __future__ import annotations
 
 import base64
 import os
-from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, Any
 
-from .constants import TOOL_NAME, TOOL_URI
+from .constants import TOOL_NAME, TOOL_URI, TOOL_VERSION
 
 if TYPE_CHECKING:
     from .base_checker import BaseChecker
@@ -60,13 +59,6 @@ _SBOM_EXT_MIME: tuple[tuple[tuple[str, ...], str], ...] = (
 
 
 # ---- Helpers --------------------------------------------------------------
-
-
-def _tool_version() -> str:
-    try:
-        return version("ntia-conformance-checker")
-    except PackageNotFoundError:
-        return "0.0.0"
 
 
 def _artifact_uri(checker: "BaseChecker") -> str:
@@ -450,7 +442,7 @@ def build_sarif(
         "tool": {
             "driver": {
                 "name": TOOL_NAME,
-                "version": _tool_version(),
+                "version": TOOL_VERSION,
                 "informationUri": TOOL_URI,
                 "rules": rules_emitted,
                 "supportedTaxonomies": supported_taxonomies,
