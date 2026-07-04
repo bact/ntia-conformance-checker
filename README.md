@@ -101,8 +101,9 @@ options:
   -h, --help            show this help message and exit
   -s, --sbom-spec {spdx2,spdx3}
                         SBOM specification of the input file; see below for details [default: spdx2]
-  -c, --comply {fsct3-min,ntia}
+  -c, --comply {fsct3,ntia}
                         Compliance standards to check against; see below for details [default: ntia]
+  -m, --mature N        Maturity level (ordinal) to assess against; rules above it are out of scope. 0 = baseline [default: 0]
   -k, --skip-validation
                         Skip validation
   -r, --output TYPE     Report output type; see below for details [default: print]
@@ -119,7 +120,7 @@ choices:
     spdx3       System Package Data Exchange (SPDX) 3.x
 
   Compliance standards (for --comply):
-    fsct3-min   2024 CISA Framing Software Component Transparency (minimum expectation)
+    fsct3       2024 CISA SBOM Baseline Attributes (Minimum Expected)
     ntia        2021 NTIA SBOM Minimum Elements
 
   Report output types (for --output):
@@ -130,7 +131,7 @@ choices:
 
 Examples:
   sbomcheck sbom.spdx
-  sbomcheck -s spdx3 -c fsct3-min -v sbom.json
+  sbomcheck -s spdx3 -c fsct3 -v sbom.json
   sbomcheck sbom.yaml --output json --output-file report.json
 ```
 
@@ -167,8 +168,16 @@ from ntia_conformance_checker import SbomChecker
 
 sbom_checker = SbomChecker("SBOM_filepath")
 
-print(sbom_checker.compliant)
+print(sbom_checker.check_compliance())
 ```
+
+`check_compliance()` accepts an optional `maturity` level (for specs that
+declare maturity tiers); it defaults to the instance's maturity (baseline,
+`0`).  One checker instance can be queried at different maturity levels.
+
+> The `compliant` attribute still works but is **deprecated** — it emits a
+> `DeprecationWarning` and is equivalent to `check_compliance(maturity=0)`.
+> Migrate to `check_compliance()`.
 
 See the API documentation at:
 <https://spdx.github.io/ntia-conformance-checker/>

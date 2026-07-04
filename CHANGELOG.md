@@ -13,12 +13,21 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+This release corrects conformance logic, which may result in different
+conformance outcomes compared to previous versions, and introduces a
+declarative rule engine to enhance extensibility.
+
 ### Added
 
 <!-- TODO: replace with [#NNN] link once this PR is opened -->
 
 - `-v`/`-vv`/`--debug` log verbosity levels and `-q`/`--quiet` to show
   errors only; `-k` short flag for `--skip-validation`
+- Declarative rule engine: each compliance standard is a `rules/<spec_id>.yaml`
+  file; adding a standard no longer requires a Python subclass
+- `-m`/`--mature N` to assess against a target maturity level. No shipped
+  rule currently declares a non-zero maturity, so this has no observable
+  effect yet on `ntia`/`fsct3`; it scaffolds future per-tier rules
 
 ### Changed
 
@@ -26,6 +35,12 @@ and this project adheres to [Semantic Versioning][semver].
   use `-v` to restore the old default verbosity
 - `--output quiet` renamed to `--output none` (`quiet` still accepted;
   the name is now reserved for log verbosity)
+- `compliance` argument now also accepts a `Spec` object in addition to a
+  spec id string
+
+### Deprecated
+
+- `BaseChecker.compliant` property; use `check_compliance()` instead
 
 ### Fixed
 

@@ -65,7 +65,7 @@ def get_parsed_args() -> argparse.Namespace:
         + "\n\n"
         "Examples:\n"
         "  sbomcheck sbom.spdx\n"
-        "  sbomcheck -s spdx3 -c fsct3-min -v sbom.json\n"
+        "  sbomcheck -s spdx3 -c fsct3 -v sbom.json\n"
         "  sbomcheck sbom.yaml --output json --output-file report.json\n"
     )
 
@@ -106,6 +106,18 @@ def get_parsed_args() -> argparse.Namespace:
         "--conform",  # alias of --comply
         dest="comply",
         help=argparse.SUPPRESS,  # hide from help
+    )
+    parser.add_argument(
+        "-m",
+        "--mature",
+        dest="maturity",
+        type=int,
+        default=0,
+        metavar="N",
+        help=(
+            "Maturity level (ordinal) to assess against; rules above it are "
+            "out of scope.  0 = baseline [default: 0]"
+        ),
     )
     parser.add_argument(
         "-k",
@@ -298,17 +310,22 @@ def get_sbom_spec(file: str, sbom_spec: str) -> str:
 
 
 def print_output(
-    sbom: BaseChecker, *, output_type: str, output_file: str | None, verbose: bool
+    sbom: BaseChecker,
+    *,
+    output_type: str,
+    output_file: str | None,
+    verbose: bool,
+    maturity: int = 0,
 ) -> None:
-    """Print or save the output report."""
+    """Print or save the output report at ``maturity`` (defaults to baseline 0)."""
     match output_type:
         case "print":
-            sbom.print_table_output(verbose=verbose)
+            sbom.print_table_output(verbose=verbose, maturity=maturity)
             if verbose:
-                sbom.print_components_missing_info()
+                sbom.print_components_missing_info(maturity=maturity)
 
         case "json":
-            result_dict: dict[str, Any] = sbom.output_json()
+            result_dict: dict[str, Any] = sbom.output_json(maturity=maturity)
             if output_file:
                 with open(output_file, "w", encoding="utf-8") as outfile:
                     json.dump(result_dict, outfile)
@@ -316,7 +333,7 @@ def print_output(
                 print(json.dumps(result_dict, indent=2))
 
         case "html":
-            html_output = sbom.output_html()
+            html_output = sbom.output_html(maturity=maturity)
             if output_file:
                 try:
                     with open(output_file, "w", encoding="utf-8") as outfile:
