@@ -1,0 +1,80 @@
+{
+  "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+  "@graph": [
+    {
+      "type": "CreationInfo",
+      "@id": "_:g7ai-creationinfo",
+      "specVersion": "3.0.1",
+      "createdBy": [
+        "https://spdx.org/spdxdocs/g7ai-tests/Person1"
+      ],
+      "created": "2025-01-01T00:00:00Z"
+    },
+    {
+      "type": "Person",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/Person1",
+      "creationInfo": "_:g7ai-creationinfo",
+      "name": "Test User"
+    },
+    {
+      "type": "Organization",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/Supplier1",
+      "creationInfo": "_:g7ai-creationinfo",
+      "name": "Test Supplier"
+    },
+    {
+      "type": "SpdxDocument",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/Document1",
+      "creationInfo": "_:g7ai-creationinfo",
+      "name": "G7 AI SBOM Test - Missing AI-specific fields",
+      "profileConformance": [
+        "core",
+        "software",
+        "ai"
+      ],
+      "rootElement": [
+        "https://spdx.org/spdxdocs/g7ai-tests/SBOM1"
+      ]
+    },
+    {
+      "type": "software_Sbom",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/SBOM1",
+      "creationInfo": "_:g7ai-creationinfo",
+      "name": "G7 AI SBOM",
+      "software_sbomType": [
+        "analyzed"
+      ],
+      "rootElement": [
+        "https://spdx.org/spdxdocs/g7ai-tests/AIPackage1"
+      ]
+    },
+    {
+      "type": "ai_AIPackage",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/AIPackage1",
+      "creationInfo": "_:g7ai-creationinfo",
+      "name": "Test AI Model",
+      "software_packageVersion": "1.0.0",
+      "suppliedBy": "https://spdx.org/spdxdocs/g7ai-tests/Supplier1",
+      "software_primaryPurpose": "application",
+      "software_copyrightText": "Copyright Test Supplier",
+      "software_downloadLocation": "https://example.com/model"
+    },
+    {
+      "type": "Relationship",
+      "spdxId": "https://spdx.org/spdxdocs/g7ai-tests/Rel-concludedLicense-AI",
+      "creationInfo": "_:g7ai-creationinfo",
+      "relationshipType": "hasConcludedLicense",
+      "from": "https://spdx.org/spdxdocs/g7ai-tests/AIPackage1",
+      "to": [
+        "https://spdx.org/licenses/g7ai-tests/MIT"
+      ]
+    },
+    {
+      "type": "simplelicensing_LicenseExpression",
+      "spdxId": "https://spdx.org/licenses/g7ai-tests/MIT",
+      "creationInfo": "_:g7ai-creationinfo",
+      "simplelicensing_licenseExpression": "MIT",
+      "simplelicensing_licenseListVersion": "3.25.0"
+    }
+  ]
+}

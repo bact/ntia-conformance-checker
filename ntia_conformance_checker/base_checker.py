@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2024-2025 SPDX contributors
+# SPDX-FileCopyrightText: 2024-present SPDX contributors
 # SPDX-FileType: SOURCE
 # SPDX-License-Identifier: Apache-2.0
 
@@ -76,7 +76,7 @@ class BaseChecker(ABC):
         ),
     }
 
-    compliance_standard: str = ""  # fsct3-min, ntia
+    compliance_standard: str = ""  # fsct3-min, ntia, g7ai
     sbom_spec: str = ""  # spdx2, spdx3
 
     # These are detectable by spdx-tools, so not needed for now.
@@ -717,6 +717,31 @@ class BaseChecker(ABC):
 
         return []
 
+    # ------------------------------------------------------------------
+    # Document-level SBOM checks (SPDX 3 only)
+    # ------------------------------------------------------------------
+
+    def get_sbom_types(self) -> list[str]:
+        """Get SBOM types declared in any ``/Software/Sbom`` element.
+
+        CISA Framing Software Component Transparency (2024) and G7 SBOM for AI
+        both require an SBOM generation context, expressed via
+        ``software_Sbom.software_sbomType``.
+
+        Returns:
+            list[str]: Distinct SBOM type strings found across all
+            ``/Software/Sbom`` elements; empty for SPDX 2 or when none present.
+        """
+        if not self.doc or self.sbom_spec != "spdx3":
+            return []
+        doc = cast("spdx3.SHACLObjectSet", self.doc)
+        types: list[str] = []
+        for obj in doc.foreach_type(spdx3.software_Sbom):
+            types.extend(
+                t.strip() for t in getattr(obj, "software_sbomType", []) if t
+            )
+        return types
+
     def _get_all_components_without_info(
         self,
     ) -> list[tuple[str, list[tuple[str, str]]]]:
@@ -730,7 +755,10 @@ class BaseChecker(ABC):
             return []
 
         return [
-            (info_name, getattr(self, self._COMPONENTS_WITHOUT_INFO[info_name][0], []))
+            (
+                self._COMPONENTS_WITHOUT_INFO[info_name][1],
+                getattr(self, self._COMPONENTS_WITHOUT_INFO[info_name][0], []),
+            )
             for info_name in self.MIN_ELEMENTS
             if info_name in self._COMPONENTS_WITHOUT_INFO
             and getattr(self, self._COMPONENTS_WITHOUT_INFO[info_name][0], [])
