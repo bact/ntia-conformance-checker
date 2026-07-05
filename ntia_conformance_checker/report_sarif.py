@@ -189,6 +189,9 @@ def _emit_rule(spec: "Spec", rule: "SpecRule") -> dict[str, Any]:
             "oscalControlId": spec.oscal_control_id(rule),
         },
     }
+    # Reserved external-vocabulary link; emitted only when a rule sets it.
+    if rule.concept_uri:
+        descriptor["properties"]["conceptUri"] = rule.concept_uri
     return descriptor
 
 

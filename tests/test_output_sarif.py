@@ -301,3 +301,44 @@ def test_sarif_round_trip_json_serializable() -> None:
     s = json.dumps(sarif)
     parsed = json.loads(s)
     assert parsed["version"] == "2.1.0"
+
+
+# ---- Reserved concept_uri slot ------------------------------------------
+
+
+def test_sarif_omits_concept_uri_when_unset() -> None:
+    """Shipped rules leave concept_uri empty, so no conceptUri key appears."""
+    fixture = _fixtures("no_elements_missing")[0]
+    run = _run(NTIAChecker(fixture).output_sarif())
+    for rule in run["tool"]["driver"]["rules"]:
+        assert "conceptUri" not in rule["properties"]
+
+
+def test_sarif_emits_concept_uri_when_set(tmp_path: Any) -> None:
+    """A rule that sets concept_uri surfaces it in the SARIF descriptor."""
+    # pylint: disable=import-outside-toplevel
+    from ntia_conformance_checker.report_sarif import _emit_rule
+    from ntia_conformance_checker.spec_loader import load_spec
+
+    uri = "https://w3id.org/sbom/doc-author"
+    yaml_text = (
+        "spec:\n"
+        "  id: demo\n"
+        "  title: Demo\n"
+        "categories:\n"
+        "  - id: c\n"
+        "    code: C\n"
+        "    title: C\n"
+        "rules:\n"
+        "  - number: 1\n"
+        "    slug: demo-author-missing\n"
+        "    spec_category: c\n"
+        f"    concept_uri: {uri}\n"
+        "    probe: { name: require_document_attribute,"
+        " params: { attribute: author } }\n"
+    )
+    path = tmp_path / "demo.yaml"
+    path.write_text(yaml_text, encoding="utf-8")
+    spec = load_spec(path)
+    descriptor = _emit_rule(spec, spec.rules[0])
+    assert descriptor["properties"]["conceptUri"] == uri
