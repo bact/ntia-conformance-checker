@@ -224,14 +224,12 @@ def test_loader_flat_spec_gets_default_level(tmp_path: Path) -> None:
 def test_concept_uri_defaults_empty_and_round_trips(tmp_path: Path) -> None:
     # Reserved semantic-mapping slot: empty by default, opaque when set.
     assert load_spec(_write(tmp_path, _GOOD)).rules[0].concept_uri == ""
+    uri = "https://example.com/sbom-ontology#doc-author"
     with_uri = _GOOD.replace(
         "spec_category: c",
-        "spec_category: c\n    concept_uri: https://w3id.org/sbom/doc-author",
+        f"spec_category: c\n    concept_uri: {uri}",
     )
-    assert (
-        load_spec(_write(tmp_path, with_uri)).rules[0].concept_uri
-        == "https://w3id.org/sbom/doc-author"
-    )
+    assert load_spec(_write(tmp_path, with_uri)).rules[0].concept_uri == uri
 
 
 @pytest.mark.parametrize(
