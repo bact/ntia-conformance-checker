@@ -257,22 +257,15 @@ class SpecRule:
     differently, but the ``element_id`` matches as long as the probe queries
     the same SBOM-model field."""
 
-    concept_uri: str = ""
-    """IRI of this element's concept in an external vocabulary (e.g. a SKOS
-    concept in an SBOM ontology) -- the external-identifier counterpart to
-    :attr:`element_id`.
-
-    Empty for now: a reserved slot for linking the element to a shared,
-    spec-independent vocabulary so the same underlying element in different
-    standards (NTIA supplier, FSCT3 supplier) resolves to one concept.  When
-    populated, consumers may treat it as the object of a ``skos:exactMatch``
-    / SSSOM mapping and emit it in output.  Kept opaque -- the schema binds no
-    particular vocabulary."""
-
     element_description: str = ""
     """Short noun phrase naming the element (e.g. ``"component supplier"``).
     Used in per-finding result messages.  For the canonical user-facing
     prose, see :attr:`warning`."""
+
+    element_concept_uris: tuple[str, ...] = ()
+    """IRIs of this element's concept in external vocabularies -- the
+    external-identifier counterpart to :attr:`element_id`.
+    Consumers may treat each entry as ``skos:exactMatch``."""
 
     competency_question: str = ""
     """The yes/no competency question the rule answers, used as the label in
