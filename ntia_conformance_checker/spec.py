@@ -257,6 +257,18 @@ class SpecRule:
     differently, but the ``element_id`` matches as long as the probe queries
     the same SBOM-model field."""
 
+    concept_uri: str = ""
+    """IRI of this element's concept in an external vocabulary (e.g. a SKOS
+    concept in an SBOM ontology) -- the external-identifier counterpart to
+    :attr:`element_id`.
+
+    Empty for now: a reserved slot for linking the element to a shared,
+    spec-independent vocabulary so the same underlying element in different
+    standards (NTIA supplier, FSCT3 supplier) resolves to one concept.  When
+    populated, consumers may treat it as the object of a ``skos:exactMatch``
+    / SSSOM mapping and emit it in output.  Kept opaque -- the schema binds no
+    particular vocabulary."""
+
     element_description: str = ""
     """Short noun phrase naming the element (e.g. ``"component supplier"``).
     Used in per-finding result messages.  For the canonical user-facing
@@ -304,19 +316,6 @@ class SpecRule:
     probe: ProbeRef | None = None
     """Probe to run for this rule.  ``None`` for catalogue-only and TBD
     rules (they appear in the catalogue but no probe is invoked)."""
-
-    # -- Semantic mapping (external vocabulary) ---------------------------
-
-    concept_uri: str = ""
-    """IRI of the semantic concept this rule's element corresponds to in an
-    external vocabulary (e.g. a SKOS concept in an SBOM ontology).
-
-    Empty for now: this is a reserved slot for linking rules to a shared,
-    spec-independent element vocabulary so the same underlying element in
-    different standards (NTIA supplier, FSCT3 supplier) resolves to one
-    concept.  When populated, consumers may treat it as the object of a
-    ``skos:exactMatch`` / SSSOM mapping and emit it in output.  Kept as an
-    opaque string -- the schema does not bind any particular vocabulary."""
 
     # -- Output mappings --------------------------------------------------
 
