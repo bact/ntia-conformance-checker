@@ -43,11 +43,11 @@ rules:
     spec_clause_uri: https://example.org/demo#name   # deep link (optional)
     element_id: name             # canonical element id (see model.ELEMENT_IDS);
                                  # the attribute the probe queries
-    # concept_uri: https://example.com/sbom-ontology#component-name
-                                 # optional IRI of this element's concept in an
-                                 # external SBOM ontology; reserved slot, left
-                                 # empty until external vocabulary linking lands
     element_description: component name      # noun phrase for finding messages
+    # element_concept_uris: [https://example.org/vocab#component-name]
+                                 # optional IRIs of this element's concept in
+                                 # external ontologies; one entry per concept.
+                                 # may treat each entry as skos:exactMatch.
     competency_question: All component names provided?   # report-table label
     warning: An SBOM component should have a name.       # diagnostic prose
     maturity: 0                  # which tier requires it; omitted -> 0
