@@ -320,7 +320,7 @@ def test_sarif_emits_concept_uri_when_set(tmp_path: Any) -> None:
     from ntia_conformance_checker.report_sarif import _emit_rule
     from ntia_conformance_checker.spec_loader import load_spec
 
-    uri = "https://w3id.org/sbom/doc-author"
+    uri = "https://example.com/sbom-ontology#doc-author"
     yaml_text = (
         "spec:\n"
         "  id: demo\n"
