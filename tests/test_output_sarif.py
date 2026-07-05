@@ -303,24 +303,27 @@ def test_sarif_round_trip_json_serializable() -> None:
     assert parsed["version"] == "2.1.0"
 
 
-# ---- Reserved concept_uri slot ------------------------------------------
+# ---- Reserved element_concept_uris slot ---------------------------------
 
 
-def test_sarif_omits_concept_uri_when_unset() -> None:
-    """Shipped rules leave concept_uri empty, so no conceptUri key appears."""
+def test_sarif_omits_element_concept_uris_when_unset() -> None:
+    """Shipped rules leave element_concept_uris empty, so no key appears."""
     fixture = _fixtures("no_elements_missing")[0]
     run = _run(NTIAChecker(fixture).output_sarif())
     for rule in run["tool"]["driver"]["rules"]:
-        assert "conceptUri" not in rule["properties"]
+        assert "elementConceptUris" not in rule["properties"]
 
 
-def test_sarif_emits_concept_uri_when_set(tmp_path: Any) -> None:
-    """A rule that sets concept_uri surfaces it in the SARIF descriptor."""
+def test_sarif_emits_element_concept_uris_when_set(tmp_path: Any) -> None:
+    """A rule that sets element_concept_uris surfaces them in the descriptor."""
     # pylint: disable=import-outside-toplevel
     from ntia_conformance_checker.report_sarif import _emit_rule
     from ntia_conformance_checker.spec_loader import load_spec
 
-    uri = "https://example.com/sbom-ontology#doc-author"
+    uris = [
+        "https://example.org/vocab#doc-author",
+        "https://example.org/other-vocab#author",
+    ]
     yaml_text = (
         "spec:\n"
         "  id: demo\n"
@@ -333,7 +336,7 @@ def test_sarif_emits_concept_uri_when_set(tmp_path: Any) -> None:
         "  - number: 1\n"
         "    slug: demo-author-missing\n"
         "    spec_category: c\n"
-        f"    concept_uri: {uri}\n"
+        f"    element_concept_uris: {uris}\n"
         "    probe: { name: require_document_attribute,"
         " params: { attribute: author } }\n"
     )
@@ -341,4 +344,4 @@ def test_sarif_emits_concept_uri_when_set(tmp_path: Any) -> None:
     path.write_text(yaml_text, encoding="utf-8")
     spec = load_spec(path)
     descriptor = _emit_rule(spec, spec.rules[0])
-    assert descriptor["properties"]["conceptUri"] == uri
+    assert descriptor["properties"]["elementConceptUris"] == uris
