@@ -49,7 +49,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">spdx_tools.spdx.parser.error</span><span class="w"> </span><span class="kn">import</span> <span class="n">SPDXParsingError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">spdx_tools.spdx.validation.document_validator</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate_full_spdx_document</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.adapters</span><span class="w"> </span><span class="kn">import</span> <span class="n">SbomAdapter</span><span class="p">,</span> <span class="n">Spdx2Adapter</span><span class="p">,</span> <span class="n">Spdx3Adapter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.adapters</span><span class="w"> </span><span class="kn">import</span> <span class="n">NullAdapter</span><span class="p">,</span> <span class="n">SbomAdapter</span><span class="p">,</span> <span class="n">Spdx2Adapter</span><span class="p">,</span> <span class="n">Spdx3Adapter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_SBOM_SPEC</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.graph_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">analyze_graph_connectivity</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.report</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -64,6 +64,8 @@
 <span class="p">)</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sized</span>
+
     <span class="kn">from</span><span class="w"> </span><span class="nn">spdx_python_model.bindings</span><span class="w"> </span><span class="kn">import</span> <span class="n">v3_0_1</span> <span class="k">as</span> <span class="n">spdx3</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">spdx_tools.spdx.model.document</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">spdx_tools.spdx.validation.validation_message</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationMessage</span>
@@ -142,6 +144,8 @@
     <span class="n">dependency_relationships</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Has dependency relationship?</span>
     <span class="c1"># See https://github.com/spdx/ntia-conformance-checker/issues/392</span>
     <span class="c1"># for discussion on dependency relationships and DESCRIBES.</span>
+    <span class="c1"># False when no component is reachable from the SBOM root.</span>
+    <span class="n">components_evaluated</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="n">compliant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Is SBOM compliant with the chosen standard?</span>
 
@@ -225,7 +229,7 @@
         <span class="c1"># "Pointers" refers to relationship edges targeting unknown/missing elements in the graph.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">has_unknown_pointers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span> <span class="n">SbomAdapter</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span> <span class="n">SbomAdapter</span> <span class="o">=</span> <span class="n">NullAdapter</span><span class="p">()</span>
 
         <span class="k">match</span> <span class="n">sbom_spec</span><span class="p">:</span>
             <span class="k">case</span> <span class="s2">"spdx2"</span><span class="p">:</span>
@@ -304,58 +308,58 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">all_components_without_info</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sbom_gen_context</span> <span class="o">=</span> <span class="p">[]</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_all_provided</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">missing</span><span class="p">:</span> <span class="n">Sized</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Check if components were evaluated and none is missing the information.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            missing: Components missing the information.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if components were evaluated and ``missing`` is empty.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">components_evaluated</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">missing</span>
+
 <div class="viewcode-block" id="BaseChecker.check_doc_version">
 <a class="viewcode-back" href="../../ntia_conformance_checker.html#ntia_conformance_checker.base_checker.BaseChecker.check_doc_version">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">check_doc_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Check if the document's specification version exists."""</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">check_doc_version</span><span class="p">()</span>
-        <span class="k">return</span> <span class="kc">False</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">check_doc_version</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.check_author">
 <a class="viewcode-back" href="../../ntia_conformance_checker.html#ntia_conformance_checker.base_checker.BaseChecker.check_author">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">check_author</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Check if the author of SBOM data exists."""</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">check_author</span><span class="p">()</span>
-        <span class="k">return</span> <span class="kc">False</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">check_author</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.check_dependency_relationships">
 <a class="viewcode-back" href="../../ntia_conformance_checker.html#ntia_conformance_checker.base_checker.BaseChecker.check_dependency_relationships">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">check_dependency_relationships</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Check if the SBOM document declares dependency information."""</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">check_dependency_relationships</span><span class="p">()</span>
-        <span class="k">return</span> <span class="kc">False</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">check_dependency_relationships</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.check_timestamp">
 <a class="viewcode-back" href="../../ntia_conformance_checker.html#ntia_conformance_checker.base_checker.BaseChecker.check_timestamp">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">check_timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Check if the SBOM creation timestamp exists."""</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">check_timestamp</span><span class="p">()</span>
-        <span class="k">return</span> <span class="kc">False</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">check_timestamp</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.get_doc_spec_version">
 <a class="viewcode-back" href="../../ntia_conformance_checker.html#ntia_conformance_checker.base_checker.BaseChecker.get_doc_spec_version">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_doc_spec_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retrieve the document's specification version."""</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_doc_spec_version</span><span class="p">()</span>
-        <span class="k">return</span> <span class="kc">None</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_doc_spec_version</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.get_sbom_name">
 <a class="viewcode-back" href="../../ntia_conformance_checker.html#ntia_conformance_checker.base_checker.BaseChecker.get_sbom_name">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_sbom_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retrieve the name of the SBOM."""</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_sbom_name</span><span class="p">()</span>
-        <span class="k">return</span> <span class="s2">""</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_sbom_name</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.get_sbom_types">
@@ -368,9 +372,7 @@
 <span class="sd">        https://www.cisa.gov/resources-tools/resources/framing-software-component-transparency-2024</span>
 <span class="sd">        """</span>
         <span class="c1"># SBOM type is only available in SPDX 3</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_sbom_types</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_conformance_messages</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[]</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_sbom_types</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_conformance_messages</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.get_components_without_concluded_licenses">
@@ -385,11 +387,9 @@
 <span class="sd">            preferred value (name or SPDX ID) as needed.</span>
 <span class="sd">        """</span>
         <span class="c1"># Note: concluded license is mandatory in SPDX-2.2 and SPDX-2.3</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_concluded_licenses</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="p">[]</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_concluded_licenses</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.get_components_without_copyright_texts">
@@ -403,11 +403,9 @@
 <span class="sd">            (component_name, spdx_id). Consumers should extract the</span>
 <span class="sd">            preferred value (name or SPDX ID) as needed.</span>
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_copyright_texts</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="p">[]</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_copyright_texts</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.get_components_without_identifiers">
@@ -421,11 +419,9 @@
 <span class="sd">            (component_name, spdx_id). Consumers should extract the</span>
 <span class="sd">            preferred value (name or SPDX ID) as needed.</span>
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_identifiers</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="p">[]</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_identifiers</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.get_components_without_names">
@@ -439,11 +435,7 @@
 <span class="sd">            (component_name, spdx_id). Consumers should extract the</span>
 <span class="sd">            preferred value (name or SPDX ID) as needed.</span>
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_names</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="p">[]</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.get_components_without_suppliers">
@@ -457,11 +449,9 @@
 <span class="sd">            (component_name, spdx_id). Consumers should extract the</span>
 <span class="sd">            preferred value (name or SPDX ID) as needed.</span>
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_suppliers</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="p">[]</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_suppliers</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.get_components_without_versions">
@@ -475,11 +465,9 @@
 <span class="sd">            (component_name, spdx_id). Consumers should extract the</span>
 <span class="sd">            preferred value (name or SPDX ID) as needed.</span>
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_versions</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="p">[]</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_components_without_versions</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span>
+        <span class="p">)</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_all_components_without_info</span><span class="p">(</span>
@@ -510,9 +498,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            int: The total number of components.</span>
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_total_number_components</span><span class="p">()</span>
-        <span class="k">return</span> <span class="mi">0</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapter</span><span class="o">.</span><span class="n">get_total_number_components</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="BaseChecker.parse_file">
@@ -607,6 +593,7 @@
             <span class="n">parsing_errors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_parsing_errors</span><span class="p">,</span>
             <span class="n">unknown_pointer_edges</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"unknown_pointer_edges"</span><span class="p">,</span> <span class="p">{}),</span>
             <span class="n">floating_component_ids</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"floating_component_ids"</span><span class="p">,</span> <span class="nb">set</span><span class="p">()),</span>
+            <span class="n">components_evaluated</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">components_evaluated</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="n">report_text</span><span class="p">(</span><span class="n">report_context</span><span class="p">,</span> <span class="n">verbose</span><span class="p">))</span></div>
@@ -632,6 +619,7 @@
             <span class="n">parsing_errors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_parsing_errors</span><span class="p">,</span>
             <span class="n">unknown_pointer_edges</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"unknown_pointer_edges"</span><span class="p">,</span> <span class="p">{}),</span>
             <span class="n">floating_component_ids</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"floating_component_ids"</span><span class="p">,</span> <span class="nb">set</span><span class="p">()),</span>
+            <span class="n">components_evaluated</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">components_evaluated</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">report_html</span><span class="p">(</span><span class="n">report_context</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
@@ -658,6 +646,7 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reachable_component_ids</span> <span class="o">=</span> <span class="n">reachable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">components_evaluated</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">reachable</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">floating_component_ids</span> <span class="o">=</span> <span class="n">floating</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">unknown_pointer_edges</span> <span class="o">=</span> <span class="n">unknown_pointer_edges</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">has_unknown_pointers</span> <span class="o">=</span> <span class="n">has_unknown_pointers</span>
