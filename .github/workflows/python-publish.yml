@@ -29,13 +29,17 @@ jobs:
     - name: Build package
       run: python -m build
     - name: Embed SBOM into wheel
-      uses: bact/pitloom@3c555bf08e8c7f24ff9b4eb5659a5f9d999739f9  # v0.19.0
+      uses: bact/pitloom@3785ee7babe07661b8f0ea92fdb41321b7a88b6b  # v0.20.0
       with:
         embed-wheel: "dist/*.whl"
         project-path: "."
         extras: "content-type,validate"
         content-type: "true"
         args: --validate
+
+    - name: Smoke test wheel with embedded SBOM
+      run: |
+        .github/scripts/smoke-test-wheel.sh dist --expect-sbom
 
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # v1.14.2
