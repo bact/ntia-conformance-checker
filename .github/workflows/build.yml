@@ -43,6 +43,22 @@ jobs:
     - name: Build package
       run: |
         python -m build
+    # The same embed and check the release runs (python-publish.yml), on one
+    # job, so a failing SBOM shows on a pull request, not first at release.
+    - name: Embed SBOM into wheel
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
+      uses: bact/pitloom@3785ee7babe07661b8f0ea92fdb41321b7a88b6b  # v0.20.0
+      with:
+        embed-wheel: "dist/*.whl"
+        project-path: "."
+        extras: "content-type,validate"
+        content-type: "true"
+        args: --validate
+    - name: Check the SBOM embedded in the wheel
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
+      run: |
+        pip install spdx3-validate
+        .github/scripts/check-wheel-sbom.sh dist "${RUNNER_TEMP}/sbom"
     - name: Install package
       run: |
         pip install .
