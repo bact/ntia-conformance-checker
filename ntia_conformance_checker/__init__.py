@@ -9,13 +9,19 @@ __all__ = [
     "BSIChecker",
     "FSCT3Checker",
     "NTIAChecker",
+    "RuleBasedChecker",
+    "RuleResult",
     "SbomChecker",
+    "get_spec",
 ]
 
 from .base_checker import BaseChecker
 from .bsi_checker import BSIChecker
 from .fsct_checker import FSCT3Checker
+from .model import RuleResult
 from .ntia_checker import NTIAChecker
+from .registry import get_spec
+from .rule_based_checker import RuleBasedChecker
 from .sbom_checker import SbomChecker
 
 try:

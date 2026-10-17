@@ -193,6 +193,10 @@ class RuleBasedChecker(BaseChecker):
 
     # ---- Running the rules --------------------------------------------------
 
+    def rule_outcomes(self) -> dict[str, str]:
+        """Return the outcome of every emitted rule by rule id, sorted by id."""
+        return {k: v.outcome for k, v in sorted(self.rule_results().items())}
+
     def rule_results(self) -> dict[str, RuleResult]:
         """Evaluate every emitted rule and return its result by rule id.
 

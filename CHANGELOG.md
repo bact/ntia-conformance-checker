@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning][semver].
   see `rules/g7ai.md`
 - JSON output adds `ruleResults` and `clusterCompliance` for YAML-defined
   standards
+- `RuleBasedChecker`, `RuleResult` and `get_spec` are exported from the
+  package; `RuleBasedChecker.rule_outcomes()` returns the outcome of every
+  rule by id, sorted
 
 ### Changed
 
