@@ -72,7 +72,7 @@ def test_rules_and_mapping_subjects_match() -> None:
     assert {_subject(r) for r in RULES} == set(ROWS)
 
 
-@pytest.mark.parametrize("rule", RULES, ids=lambda r: _subject(r))
+@pytest.mark.parametrize("rule", RULES, ids=_subject)
 def test_probe_properties_are_mapped(rule: SpecRule) -> None:
     mapped = _mapped_names(ROWS[_subject(rule)])
     unmapped = _properties(rule) - mapped
@@ -82,7 +82,7 @@ def test_probe_properties_are_mapped(rule: SpecRule) -> None:
 @pytest.mark.parametrize(
     "rule",
     [r for r in RULES if r.status == "catalogue-only"],
-    ids=lambda r: _subject(r),
+    ids=_subject,
 )
 def test_catalogue_only_has_a_reason(rule: SpecRule) -> None:
     rows = ROWS[_subject(rule)]

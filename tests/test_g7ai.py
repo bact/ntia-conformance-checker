@@ -17,6 +17,7 @@ from typing import Any, Callable
 import pytest
 from pytest import CaptureFixture, MonkeyPatch
 
+import ntia_conformance_checker as pkg
 from ntia_conformance_checker import probes
 from ntia_conformance_checker.main import main
 from ntia_conformance_checker.registry import get_spec
@@ -419,8 +420,6 @@ def test_probe_params_are_validated_at_load(name: str) -> None:
 
 
 def test_rule_outcomes_sorted_and_exported() -> None:
-    import ntia_conformance_checker as pkg
-
     checker = pkg.RuleBasedChecker(str(G7), compliance="g7ai", sbom_spec="spdx3")
     outcomes = checker.rule_outcomes()
     assert list(outcomes) == sorted(outcomes)
