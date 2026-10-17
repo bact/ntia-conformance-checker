@@ -410,7 +410,7 @@ def report_html(
     # Compliance results
     report.append("<div class='conformance-res'>")
     report.append(
-        "<h2 class='conformance-res-title'>" f"{escape(title)} Conformance Results</h2>"
+        f"<h2 class='conformance-res-title'>{escape(title)} Conformance Results</h2>"
     )
     report.append(f"<h3 class='conformance-res-status'>Conformant: {rc.compliant}</h3>")
 
