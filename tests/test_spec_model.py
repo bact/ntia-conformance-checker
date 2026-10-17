@@ -252,8 +252,7 @@ _PROBE = "probe: { name: require_document_attribute, params: { attribute: author
 
 def _rule(number: int, slug: str, extra: str = "") -> str:
     return (
-        f"  - {{ number: {number}, slug: {slug}, spec_category: c, {_PROBE}"
-        f"{extra} }}\n"
+        f"  - {{ number: {number}, slug: {slug}, spec_category: c, {_PROBE}{extra} }}\n"
     )
 
 
