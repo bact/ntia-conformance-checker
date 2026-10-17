@@ -253,7 +253,8 @@ def test_no_false_pass(tmp_path: Path, name: str) -> None:
 
 def test_dataset_linked_only_by_training_is_reachable(tmp_path: Path) -> None:
     checker = _check(
-        tmp_path, _set("Rel-contains-model", to=[B + "Model1"])  # not the dataset
+        tmp_path,
+        _set("Rel-contains-model", to=[B + "Model1"]),  # not the dataset
     )
     assert _outcomes(checker)[P + "DP-001"] == "present"  # via Model1 trainedOn
     assert checker.check_compliance() is True
@@ -415,3 +416,20 @@ def test_probe_params_are_validated_at_load(name: str) -> None:
     assert check is not None
     with pytest.raises(ValueError):
         check(params)
+
+
+def test_rule_outcomes_sorted_and_exported() -> None:
+    import ntia_conformance_checker as pkg
+
+    checker = pkg.RuleBasedChecker(str(G7), compliance="g7ai", sbom_spec="spdx3")
+    outcomes = checker.rule_outcomes()
+    assert list(outcomes) == sorted(outcomes)
+    assert outcomes == {k: v.outcome for k, v in checker.rule_results().items()}
+    assert set(outcomes.values()) <= {
+        "present",
+        "missing",
+        "not-applicable",
+        "out-of-scope",
+    }
+    assert isinstance(checker.rule_results()["BOM-G7AI2026-MD-001"], pkg.RuleResult)
+    assert pkg.get_spec("g7ai").rules
