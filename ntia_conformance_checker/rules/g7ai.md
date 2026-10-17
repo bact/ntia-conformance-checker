@@ -51,6 +51,17 @@ sub-elements are reported on their own but do not block.
 An element that is checked on its own evidence (`MDL-012`) is
 independent of its sub-elements.
 
+## What a check does not show
+
+A rule that reads a property is `present` when the property is there. It does
+not judge the value. In particular `ai_informationAboutApplication` makes
+`SLP-008.3`, `MDL-006.4` and `MDL-010.4` (input preprocessing, intended use)
+`present` whatever it holds: an input/output signature satisfies them although
+it is neither a preprocessing nor an intended-use statement. A producer that
+writes a value to satisfy a rule, a weight name as an input for example, turns
+the rule `present` and the SBOM less honest. Read a result as "the SBOM has the
+property", and check the value before relying on the element.
+
 ## Not checked
 
 25 of 81 elements are not checked: SPDX 3.0.1 has no field for them (marked *gap* below), or their mapping is not yet reviewed (Infrastructure, Key Performance Indicators and some Security Properties elements).
