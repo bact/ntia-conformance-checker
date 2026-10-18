@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Added
 
+- FSCT 2024 (`-c fsct3`): the SPDX 3.0.1 mapping is checked against the rules
+  and `rules/fsct3.md` lists what is and is not checked
 - `pytest --real-world` runs the slow tests on real-world SBOMs, skipped by
   default
 - GitHub releases attach the wheel, the sdist and the wheel's SPDX 3 SBOM,

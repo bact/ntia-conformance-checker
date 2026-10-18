@@ -29,6 +29,7 @@ Currently, the supported specifications are:
 
 - [2021 NTIA SBOM Minimum Elements][ntia]
 - [2024 CISA Framing Software Component Transparency (FSCT3) (minimum expected)][fsct3]
+  (see [what is checked](ntia_conformance_checker/rules/fsct3.md))
 - [G7 SBOM for AI: Minimum Elements][g7ai] (partial; SPDX 3 only, see
   [what is checked](ntia_conformance_checker/rules/g7ai.md))
 - [2026 CISA SBOM Minimum Elements][cisa2026] (partial; SPDX 3 only, see
