@@ -43,6 +43,18 @@ def _project_root(graph: Graph) -> None:
         del system[key]
 
 
+def _model_is_a_root_too(graph: Graph) -> None:
+    """The shape Pitloom writes: the project and its model are both roots."""
+    _project_root(graph)
+    _el(graph, "SBOM1")["rootElement"].append(B + "Model1")
+
+
+def _ai_system_and_a_package(graph: Graph) -> None:
+    """A real AI system (an AI application) beside a plain package: the
+    application is the system, not the model."""
+    _el(graph, "SBOM1")["rootElement"].append(B + "Tool2")
+
+
 def _drop_model_prop(graph: Graph) -> None:
     _project_root(graph)
     del _el(graph, "Model1")["ai_useSensitivePersonalInformation"]
@@ -87,12 +99,17 @@ _MODEL = ("Test AI Model", B + "Model1")
     [
         (lambda g: None, None, "present"),  # the root is an AI package
         (_project_root, _MODEL, "present"),
+        (_model_is_a_root_too, _MODEL, "present"),
+        (_ai_system_and_a_package, None, "missing"),  # no stand-in: the roots stay
         (_drop_model_prop, _MODEL, "missing"),  # the model's gap, not the root's
         (_second_model, None, "missing"),  # which one is not for us to guess
         (_unreachable_model, None, "missing"),
         (_not_a_model, None, "missing"),  # an application is not a model
     ],
-    ids=["ai-root", "one-model", "model-lacks-it", "two-models", "unreachable", "app"],
+    ids=[
+        "ai-root", "one-model", "model-also-a-root", "ai-system-and-package",
+        "model-lacks-it", "two-models", "unreachable", "app",
+    ],  # fmt: skip
 )
 def test_the_system_rules_read_the_model_only_when_it_is_the_one(
     tmp_path: Path,

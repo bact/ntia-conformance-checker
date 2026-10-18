@@ -388,15 +388,19 @@ class Spdx3Adapter(SbomAdapter):
         """The one model that is judged for the system, or ``None``.
 
         A project that ships an AI model and no system of its own has a root
-        that is not an AI package, and System-level properties are AI
-        package properties. When exactly one model is reachable from such a
-        root, the rules that read the system's properties read that model. Two
-        models, or none, leave the root as the system: which one to judge is not
-        for the checker to guess. Relationship rules keep reading the root, which
-        is what holds the model and its dependencies.
+        that is not an AI package (and may list the model as a root too), and
+        System-level properties are AI package properties. When a root is such a
+        package, no root is an AI system (an AI package that is not a model),
+        and exactly one model is reachable, the rules that read the system's
+        properties read that model. Two models, or none, leave the roots as the
+        system: which one to judge is not for the checker to guess. Relationship
+        rules keep reading the roots, which hold the model and its dependencies.
         """
-        if reachable_ids is None or any(
-            isinstance(root, spdx3.ai_AIPackage) for root in roots
+        if reachable_ids is None:
+            return None
+        ai_roots = [r for r in roots if isinstance(r, spdx3.ai_AIPackage)]
+        if len(ai_roots) == len(roots) or any(
+            not _is_model_purpose(r) for r in ai_roots
         ):
             return None
         models = [

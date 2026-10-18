@@ -54,9 +54,10 @@ independent of its sub-elements.
 ## A project that ships one model
 
 System-level properties are AI package properties, but a project that ships a
-model and no system of its own has a plain software package as its root. When
-the root is not an AI package and exactly one model is reachable from it, the
-rules that read the system's properties read that model, and the reports name
+model and no system of its own has a plain software package as its root (often
+with the model listed as a root too). When a root is such a package, no root is
+an AI system (an AI package that is not a model) and exactly one model is
+reachable, the rules that read the system's properties read that model, and the reports name
 it (`systemJudgedByModel` in the JSON report and in the SARIF run properties;
 a finding names the model). With two models, none, or one that is not
 reachable, the root stays the system: the checker does not choose between
