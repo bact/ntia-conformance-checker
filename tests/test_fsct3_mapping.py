@@ -81,11 +81,12 @@ def test_rules_and_mapping_subjects_match() -> None:
     assert set(SUBJECTS.values()) == set(ROWS)
 
 
-@pytest.mark.parametrize("rule_id", sorted(SUBJECTS))
+CHECKED = sorted(set(SUBJECTS) - set(CATALOGUE_ONLY))
+
+
+@pytest.mark.parametrize("rule_id", CHECKED)
 def test_probe_reads_a_mapped_property(rule_id: str) -> None:
     rule: SpecRule = RULES[rule_id]
-    if rule.status == "catalogue-only":
-        return
     assert rule.probe is not None
     attribute = rule.probe.params["attribute"]
     assert ATTRIBUTES[attribute] in _mapped_names(ROWS[SUBJECTS[rule_id]])

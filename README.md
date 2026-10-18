@@ -120,7 +120,7 @@ options:
   -h, --help            show this help message and exit
   -s, --sbom-spec {spdx2,spdx3}
                         SBOM specification of the input file; see below for details [default: spdx2]
-  -c, --comply {bsi,fsct3,fsct3-min,g7ai,ntia}
+  -c, --comply {bsi,cisa2026,fsct3,fsct3-min,g7ai,ntia}
                         Compliance standards to check against; see below for details [default: ntia]
   -m, --mature LEVEL    Maturity level to check against; 0 is the baseline
                         and higher levels add requirements [default: 0]
