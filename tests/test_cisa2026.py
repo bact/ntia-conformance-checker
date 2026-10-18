@@ -20,7 +20,7 @@ from ntia_conformance_checker import get_spec
 from ntia_conformance_checker.adapters.spdx3_adapter import IDENTIFIER_PROPERTIES
 from ntia_conformance_checker.model import RuleResult
 from ntia_conformance_checker.rule_based_checker import RuleBasedChecker
-from ntia_conformance_checker.spec import Spec
+from ntia_conformance_checker.spec import ProbeRef, Spec
 
 from ._ai_graph import add_model_and_dataset
 
@@ -196,6 +196,77 @@ def test_identifier_types_are_those_the_shared_check_accepts(
     rule = next(r for r in get_spec("cisa2026").rules if r.slug == slug)
     assert rule.probe is not None
     assert tuple(rule.probe.params["properties"]) == IDENTIFIER_PROPERTIES
+
+
+_HASH = {"type": "Hash", "algorithm": "sha256", "hashValue": "ab" * 32}
+_CODE = {"type": "PackageVerificationCode", "algorithm": "sha1", "hashValue": "ab"}
+
+
+def _verified_using(*methods: dict[str, str]) -> Callable[[list[dict[str, Any]]], None]:
+    def edit(graph: list[dict[str, Any]]) -> None:
+        _el(graph, "Lib")["verifiedUsing"] = list(methods)
+
+    return edit
+
+
+@pytest.mark.parametrize(
+    ("methods", "outcome"),
+    [
+        ((_HASH,), "present"),
+        ((_CODE,), "missing"),  # a verification code is not a hash of it
+        ((_CODE, _HASH), "present"),
+        (({**_HASH, "hashValue": "  "},), "missing"),
+        (({**_HASH, "hashValue": "NOASSERTION"},), "missing"),
+        (({"type": "Hash", "hashValue": "ab"},), "missing"),  # no algorithm
+    ],
+    ids=["hash", "code-only", "code-and-hash", "blank-value", "noassertion", "no-alg"],
+)
+def test_hash_rules_need_a_hash_with_algorithm_and_value(
+    tmp_path: Path, methods: tuple[dict[str, str], ...], outcome: str
+) -> None:
+    got = _edit(tmp_path, _verified_using(*methods))
+    assert (got[P + "COMP-003"], got[P + "COMP-004"]) == (outcome, outcome)
+
+
+def _hash_spec(algorithms: list[str]) -> Spec:
+    """cisa2026 whose COMP-004 requires one of ``algorithms``."""
+    spec = get_spec("cisa2026")
+    probe = ProbeRef(
+        name="require_hash", params={"kind": "component", "algorithms": algorithms}
+    )
+    rules = tuple(
+        (
+            dataclasses.replace(r, probe=probe)
+            if r.slug == "cisa2026-component-hash-algorithm-missing"
+            else r
+        )
+        for r in spec.rules
+    )
+    return dataclasses.replace(spec, rules=rules)
+
+
+@pytest.mark.parametrize(
+    ("algorithms", "lib_algorithm", "outcome"),
+    [
+        (["sha512"], "sha512", "present"),
+        (["SHA512"], "sha512", "present"),  # case-insensitive
+        (["sha512"], "sha256", "missing"),
+        (["sha512"], "sha3_512", "missing"),  # a name, not a substring
+        (["sha256", "sha512"], "sha256", "present"),
+    ],
+    ids=["sha512", "upper", "sha256", "sha3-512", "either"],
+)
+def test_require_hash_algorithms_filter(
+    tmp_path: Path, algorithms: list[str], lib_algorithm: str, outcome: str
+) -> None:
+    def edit(graph: list[dict[str, Any]]) -> None:
+        _el(graph, "App")["verifiedUsing"][0]["algorithm"] = "sha512"
+        _el(graph, "Lib")["verifiedUsing"][0]["algorithm"] = lib_algorithm
+
+    got = _results(tmp_path, edit, _hash_spec(algorithms))[P + "COMP-004"]
+    assert got.outcome == outcome
+    if outcome == "missing":
+        assert [f.component_id for f in got.findings] == [B + "Lib"]
 
 
 NO_REACH_VIA = dataclasses.replace(get_spec("cisa2026"), reach_via=())

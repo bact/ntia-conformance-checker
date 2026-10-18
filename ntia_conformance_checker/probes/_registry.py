@@ -62,6 +62,12 @@ class CheckerProtocol(Protocol):
         """Components of ``kind`` declaring none of ``properties``."""
         raise NotImplementedError
 
+    def components_without_hash(
+        self, kind: str, algorithms: tuple[str, ...]
+    ) -> list[tuple[str, str]]:
+        """Components of ``kind`` with no hash (of one of ``algorithms``)."""
+        raise NotImplementedError
+
     def components_without_relationship(
         self, kind: str, relationships: tuple[str, ...], direction: str
     ) -> list[tuple[str, str]]:

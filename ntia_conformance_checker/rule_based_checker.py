@@ -186,6 +186,15 @@ class RuleBasedChecker(BaseChecker):
             kind, properties, self.reachable_component_ids
         )
 
+    def components_without_hash(
+        self, kind: str, algorithms: tuple[str, ...]
+    ) -> list[tuple[str, str]]:
+        """Components of ``kind`` with no hash (of one of ``algorithms``, when
+        given)."""
+        return self.adapter.get_components_without_hash(
+            kind, algorithms, self.reachable_component_ids
+        )
+
     def components_without_relationship(
         self, kind: str, relationships: tuple[str, ...], direction: str
     ) -> list[tuple[str, str]]:

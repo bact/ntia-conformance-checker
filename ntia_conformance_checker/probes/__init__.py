@@ -11,8 +11,15 @@ Rules declared in ``rules/*.yaml`` reference probes by name; the engine
 calls them and collects :class:`Finding` objects.
 
 Importing :mod:`ntia_conformance_checker.probes` registers every built-in
-probe as a side effect.  See :file:`probes/presence.py` for the canonical
-two-probe vocabulary that covers all current NTIA + FSCT active rules.
+probe as a side effect:
+
+* :file:`probes/presence.py` -- ``require_component_attribute`` and
+  ``require_document_attribute``, which cover every active NTIA and FSCT rule.
+* :file:`probes/spdx3.py` -- SPDX 3 probes scoped to a kind of component:
+  ``require_property`` (one of some properties), ``require_relationship``
+  (in one of some relationships), ``require_hash`` (a ``Hash`` with a
+  non-blank algorithm and value, optionally of given ``algorithms``), and
+  ``require_document_property``.
 """
 
 from __future__ import annotations

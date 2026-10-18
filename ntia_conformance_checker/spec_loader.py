@@ -353,6 +353,10 @@ def _build_probe(raw: Any, path: Path) -> ProbeRef:
         raise SpecLoadError(
             f"{path}: rule.probe.params do not fit probe {name!r}: {exc}"
         ) from exc
+    kind = sig.parameters.get("kind")
+    if kind is not None and kind.default is not kind.empty:
+        # The engine scopes a rule by its "kind" param; make a default explicit.
+        params = {"kind": kind.default, **params}
     check = probes.validator(name)
     if check is not None:
         try:

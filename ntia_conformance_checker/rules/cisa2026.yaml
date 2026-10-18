@@ -9,12 +9,12 @@
 # https://bact.github.io/bom/req/cisa2026/; the SPDX 3.0.1 fields follow
 # https://bact.github.io/bom/mapping/cisa2026-to-spdx30.sssom.tsv.
 # An element whose SPDX 3.0.1 mapping is exact, or whose carrier the checker can
-# read directly, is checked. Where the mapping is only close or broad (format
-# name and generation context: close; hash: broad), the rule is checked as
-# "the carrier is present" and says so in cisa2026.md. An element with no
-# usable carrier (signature, tool version, SBOM version) and every Practices and
-# Processes element (how SBOMs are run, not what one holds) is catalogue-only:
-# listed, never checked.
+# read directly, is checked; the hash rules read a Hash in verifiedUsing.
+# Where the mapping is only close (format name and generation context), the
+# rule is checked as "the carrier is present" and says so in cisa2026.md. An
+# element with no usable carrier (signature, tool version, SBOM version) and
+# every Practices and Processes element (how SBOMs are run, not what one holds)
+# is catalogue-only: listed, never checked.
 # Source: https://www.cisa.gov/sites/default/files/2026-07/2026_cisa_sbom_minimum_elements_508c.pdf
 
 spec:
@@ -171,8 +171,8 @@ rules:
     warning: "Component hash value is missing."
     provision: requirement
     probe:
-      name: require_property
-      params: {"kind": "component", "properties": ["verifiedUsing"]}
+      name: require_hash
+      params: {"kind": "component"}
 
   - number: 4
     slug: cisa2026-component-hash-algorithm-missing
@@ -182,8 +182,8 @@ rules:
     warning: "Component hash algorithm is missing."
     provision: requirement
     probe:
-      name: require_property
-      params: {"kind": "component", "properties": ["verifiedUsing"]}
+      name: require_hash
+      params: {"kind": "component"}
 
   - number: 5
     slug: cisa2026-component-identifiers-missing

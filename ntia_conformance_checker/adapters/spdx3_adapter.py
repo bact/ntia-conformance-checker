@@ -129,6 +129,24 @@ def _property_present(
     return _value_present(value)
 
 
+def _has_hash(obj: object, algorithms: frozenset[str] | None) -> bool:
+    """Whether ``obj`` has a ``verifiedUsing`` entry that is a ``Hash`` with a
+    non-blank algorithm and value; with ``algorithms`` (lowercase names such as
+    ``sha512``), one of those. Another integrity method (a package verification
+    code) is not a hash of the component."""
+    for method in getattr(obj, "verifiedUsing", None) or []:
+        if not isinstance(method, spdx3.Hash):
+            continue
+        algorithm = str(getattr(method, "algorithm", "") or "").rsplit("/", 1)[-1]
+        if _is_blank(algorithm, noassertion=True) or _is_blank(
+            getattr(method, "hashValue", None), noassertion=True
+        ):
+            continue
+        if algorithms is None or algorithm.strip().lower() in algorithms:
+            return True
+    return False
+
+
 def _is_model_purpose(obj: spdx3.SHACLObject) -> bool:
     """Whether an AI package is a model: it declares ``model`` as a purpose, or
     declares none (an AI package with another purpose, such as ``application``,
@@ -408,6 +426,16 @@ class Spdx3Adapter(SbomAdapter):
             if not any(
                 _property_present(obj, prop, self._resolves) for prop in properties
             )
+        ]
+
+    def get_components_without_hash(
+        self, kind: str, algorithms: tuple[str, ...], reachable_ids: set[str]
+    ) -> list[tuple[str, str]]:
+        wanted = frozenset(a.lower() for a in algorithms) if algorithms else None
+        return [
+            (name, spdx_id)
+            for name, spdx_id, obj in self._kind_objects(kind, reachable_ids)
+            if not _has_hash(obj, wanted)
         ]
 
     def get_components_without_relationships(

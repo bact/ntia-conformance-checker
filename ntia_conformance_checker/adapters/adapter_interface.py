@@ -182,6 +182,13 @@ class SbomAdapter(ABC):
         """Components of ``kind`` that declare none of ``properties``."""
         raise ValueError(f"{type(self).__name__} cannot check components of {kind!r}")
 
+    def get_components_without_hash(  # pylint: disable=unused-argument
+        self, kind: str, algorithms: tuple[str, ...], reachable_ids: set[str]
+    ) -> list[tuple[str, str]]:
+        """Components of ``kind`` with no hash (of one of ``algorithms``, when
+        given)."""
+        raise ValueError(f"{type(self).__name__} cannot check components of {kind!r}")
+
     def get_components_without_relationships(
         self,
         kind: str,

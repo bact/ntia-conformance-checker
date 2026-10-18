@@ -263,6 +263,7 @@ def _with(extra: str) -> str:  # _GOOD with extra keys on its rule
 _KIND_PROBE = (
     "probe: { name: require_property, params: { kind: KIND, properties: [name] } }"
 )
+_HASH_PROBE = "probe: { name: require_hash, params: PARAMS }"
 _TWO_LEVELS = "maturity_levels:\n  - {level: 0, id: a}\n  - {level: 1, id: b}\n"
 _REJECTED = {
     # enums / references
@@ -343,6 +344,15 @@ _REJECTED = {
     "duplicate sbom_specs": _GOOD.replace(
         "  title: Demo\n", "  title: Demo\n  sbom_specs: [spdx3, spdx3]\n"
     ),
+    "hash algorithm unknown": _GOOD.replace(
+        _PROBE, _HASH_PROBE.replace("PARAMS", "{ algorithms: [sha513] }")
+    ),
+    "hash algorithms empty": _GOOD.replace(
+        _PROBE, _HASH_PROBE.replace("PARAMS", "{ algorithms: [] }")
+    ),
+    "hash kind unknown": _GOOD.replace(
+        _PROBE, _HASH_PROBE.replace("PARAMS", "{ kind: file }")
+    ),
     "reach_via not a list": _GOOD.replace(
         "  title: Demo\n", "  title: Demo\n  reach_via: trainedOn\n"
     ),
@@ -399,6 +409,26 @@ def test_loader_accepts_probeless_tbd_and_catalogue_rules(tmp_path: Path) -> Non
             )
         )
         assert spec.rules[0].probe is None
+
+
+@pytest.mark.parametrize(
+    ("params", "expected"),
+    [
+        ("{}", {"kind": "component"}),  # the default kind is made explicit
+        ("{ kind: dataset }", {"kind": "dataset"}),
+        (
+            "{ algorithms: [SHA512, sha3_512] }",
+            {"kind": "component", "algorithms": ["SHA512", "sha3_512"]},
+        ),
+    ],
+    ids=["default-kind", "kind", "algorithms"],
+)
+def test_loader_accepts_require_hash(
+    tmp_path: Path, params: str, expected: dict[str, object]
+) -> None:
+    text = _GOOD.replace(_PROBE, _HASH_PROBE.replace("PARAMS", params))
+    probe = load_spec(_write(tmp_path, text)).rules[0].probe
+    assert probe is not None and probe.params == expected
 
 
 def test_loader_rejects_non_utf8_file(tmp_path: Path) -> None:

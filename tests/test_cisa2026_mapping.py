@@ -50,6 +50,8 @@ def _properties(rule: SpecRule) -> set[str]:
     """SPDX property names the rule's probe reads."""
     if rule.probe is None:
         return set()
+    if rule.probe.name == "require_hash":  # a Hash in verifiedUsing
+        return {"verifiedUsing"}
     params = rule.probe.params
     props = (
         params.get("properties")
