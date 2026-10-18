@@ -380,6 +380,14 @@ class Spec:
     """SBOM specifications (``"spdx2"``, ``"spdx3"``) the standard can be checked
     on.  Empty means any.  On another specification no rule applies."""
 
+    reach_via: tuple[str, ...] = ()
+    """SPDX 3 relationship types the checker follows from the SBOM root, besides
+    the composition ones (``contains``, ``dependsOn`` and the like), to find the
+    components the rules judge.  ``("trainedOn", "testedOn")`` makes a dataset
+    that a reachable model was trained or tested on a component, so the
+    component rules judge it.  Edges are followed from ``from`` to ``to``
+    only."""
+
     uri: str = ""
     """General documentation URL for the standard.  Used as the fallback
     when a :class:`SpecRule` does not provide its own ``spec_clause_uri``."""

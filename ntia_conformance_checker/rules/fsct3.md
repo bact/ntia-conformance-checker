@@ -32,8 +32,15 @@ Outcomes are reported as for [`g7ai`](g7ai.md).
 | COMP-007 | License | a `hasConcludedLicense` relationship from every package |
 | COMP-008 | Copyright Notice | `software_copyrightText` on every package |
 
-A component rule covers the packages reachable from the SBOM root by
-composition; a package that is not reachable is not evaluated. COMP-004 on
+A component rule covers the packages reachable from the SBOM root, the root
+included. On SPDX 3 the checker follows, from the `from` element to the `to`
+elements, the composition and dependency relationships (`contains`,
+`hasOptionalComponent`, `packagedBy`, `dependsOn`, `hasDynamicLink`,
+`hasStaticLink`, `hasPrerequisite`, `hasOptionalDependency`,
+`hasProvidedDependency`) and, as `reach_via` in `fsct3.yaml` declares,
+`trainedOn` and `testedOn`: a dataset that a reachable model was trained or
+tested on is judged like any other component. A package that is not reachable
+is not evaluated. COMP-004 on
 SPDX 3 is the exception: it looks at every package.
 
 ## Not checked (catalogue-only)

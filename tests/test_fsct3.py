@@ -17,6 +17,8 @@ import pytest
 
 from ntia_conformance_checker.rule_based_checker import RuleBasedChecker
 
+from ._ai_graph import add_model_and_dataset
+
 SOURCE = Path(__file__).parent / "data" / "spdx3" / "cisa2026" / "conformant.json"
 B = "https://spdx.org/spdxdocs/cisa2026-tests/"
 P = "BOM-FSCT2024-"
@@ -163,3 +165,15 @@ def test_a_contains_relationship_stands_in_for_a_dependency(tmp_path: Path) -> N
         _el(graph, "Rel-dep")["relationshipType"] = "contains"
 
     assert _outcomes(tmp_path, to_contains)["META-005"] == "present"
+
+
+@pytest.mark.parametrize(
+    ("link", "expected"),
+    [("trainedOn", "missing"), ("testedOn", "missing"), (None, "present")],
+    ids=["trained", "tested", "unlinked"],
+)
+def test_a_dataset_reached_by_trained_or_tested_on_is_judged(
+    tmp_path: Path, link: str | None, expected: str
+) -> None:
+    got = _outcomes(tmp_path, add_model_and_dataset(link, "suppliedBy"))
+    assert got["COMP-003"] == expected

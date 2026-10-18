@@ -343,6 +343,15 @@ _REJECTED = {
     "duplicate sbom_specs": _GOOD.replace(
         "  title: Demo\n", "  title: Demo\n  sbom_specs: [spdx3, spdx3]\n"
     ),
+    "reach_via not a list": _GOOD.replace(
+        "  title: Demo\n", "  title: Demo\n  reach_via: trainedOn\n"
+    ),
+    "reach_via unknown relationship": _GOOD.replace(
+        "  title: Demo\n", "  title: Demo\n  reach_via: [trainedOnn]\n"
+    ),
+    "duplicate reach_via": _GOOD.replace(
+        "  title: Demo\n", "  title: Demo\n  reach_via: [testedOn, testedOn]\n"
+    ),
     "roll-up with only inactive sub-rules": _GOOD.replace(
         "    probe:", "    aggregation: any-of\n    probe:"
     ).replace(f"    {_PROBE}\n", "")

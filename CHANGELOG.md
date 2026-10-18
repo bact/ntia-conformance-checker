@@ -66,6 +66,9 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Changed
 
+- CISA 2026 and FSCT 2024 also follow `trainedOn` and `testedOn` from the root
+  (the spec's new `reach_via` list), so the component rules judge a dataset a
+  reachable model was trained or tested on
 - Every rule of YAML-defined standards reports "The SBOM could not be parsed."
   for an SBOM that could not be parsed (JSON `findings[].note`)
 - Pull request and release builds embed the SBOM with Pitloom 0.20.1 and fail

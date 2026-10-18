@@ -21,6 +21,11 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
+#: Every SPDX 3.0.1 relationship type name (``dependsOn``, ``trainedOn``, ...).
+SPDX3_RELATIONSHIP_TYPES: frozenset[str] = frozenset(
+    spdx3.RelationshipType.NAMED_INDIVIDUALS
+)
+
 SPDX3_PACKAGE_DEPENDENCY_RELATIONSHIP_TYPES = (
     "contains",
     "dependsOn",

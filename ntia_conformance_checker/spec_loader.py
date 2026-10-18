@@ -54,6 +54,7 @@ import yaml
 
 from . import probes
 from .model import ELEMENT_IDS
+from .spdx3_utils import SPDX3_RELATIONSHIP_TYPES
 from .spec import (
     DEFAULT_MATURITY_LEVELS,
     Aggregation,
@@ -136,6 +137,9 @@ def load_spec(path: str | Path) -> Spec:
     taxonomies = _build_taxonomies(spec_block.pop("taxonomies", None), yaml_path)
     spec_block["sbom_specs"] = _build_sbom_specs(
         spec_block.pop("sbom_specs", []), yaml_path
+    )
+    spec_block["reach_via"] = _build_reach_via(
+        spec_block.pop("reach_via", []), yaml_path
     )
     prefix = spec_block.get("rule_prefix", "")
     if not isinstance(prefix, str) or (
@@ -463,6 +467,25 @@ def _build_sbom_specs(raw: Any, path: Path) -> tuple[str, ...]:
         )
     if len(set(raw)) != len(raw):
         raise SpecLoadError(f"{path}: spec sbom_specs has duplicates: {raw!r}")
+    return tuple(raw)
+
+
+def _build_reach_via(raw: Any, path: Path) -> tuple[str, ...]:
+    """Validate the spec's ``reach_via`` list of SPDX 3 relationship types
+    (omitted -> only the composition relationships are followed)."""
+    if not isinstance(raw, list) or not all(isinstance(v, str) for v in raw):
+        raise SpecLoadError(
+            f"{path}: spec reach_via must be a list of SPDX 3 relationship "
+            f"types; got {raw!r}"
+        )
+    unknown = sorted(set(raw) - SPDX3_RELATIONSHIP_TYPES)
+    if unknown:
+        raise SpecLoadError(
+            f"{path}: spec reach_via has unknown SPDX 3 relationship type(s) "
+            f"{unknown!r}"
+        )
+    if len(set(raw)) != len(raw):
+        raise SpecLoadError(f"{path}: spec reach_via has duplicates: {raw!r}")
     return tuple(raw)
 
 

@@ -14,6 +14,9 @@ spec:
   rule_prefix: BOM-FSCT2024
   title: 2024 CISA Framing Software Component Transparency (minimum expectation)
   uri: https://www.cisa.gov/resources-tools/resources/framing-software-component-transparency-2024
+  # Besides composition, follow these from the root to find the components
+  # the rules judge: a dataset a reachable model was trained or tested on.
+  reach_via: [trainedOn, testedOn]
   taxonomies:
     category: fsct3-baseline-attributes
     clause: fsct3-clauses

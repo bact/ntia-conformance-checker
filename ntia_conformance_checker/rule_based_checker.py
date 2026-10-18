@@ -153,16 +153,18 @@ class RuleBasedChecker(BaseChecker):
         return bool(getattr(self, _DOCUMENT_ELEMENTS[element_id]))
 
     def _extra_graph_relationships(self) -> frozenset[str]:
-        """Relationships a spec rule reads pointing at the component (a dataset
-        reached through ``trainedOn``) also connect elements; lineage and
-        license links do not, so a base model or license stays outside."""
-        return frozenset(
+        """Relationships that connect elements besides the composition ones: the
+        spec's ``reach_via``, and those a spec rule reads pointing at the
+        component (a dataset reached through ``trainedOn``). Lineage and
+        license links are neither, so a base model or license stays outside."""
+        derived = frozenset(
             name
             for rule in self._spec.active_rules()
             if rule.probe is not None and rule.probe.name == "require_relationship"
             if rule.probe.params.get("direction") == "to"
             for name in rule.probe.params["relationships"]
         )
+        return derived | frozenset(self._spec.reach_via)
 
     def has_components(self, kind: str, reachable_only: bool = True) -> bool:
         """Whether the SBOM has a component of ``kind`` (reachable from the root

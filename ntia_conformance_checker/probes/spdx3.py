@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 from spdx_python_model.bindings import v3_0_1 as spdx3
 
 from ..model import COMPONENT_KINDS, Finding
+from ..spdx3_utils import SPDX3_RELATIONSHIP_TYPES
 from ._registry import CheckerProtocol, probe
 
 if TYPE_CHECKING:
@@ -33,7 +34,6 @@ _KIND_CLASSES: dict[str, tuple[type, ...]] = {
         spdx3.dataset_DatasetPackage,
     ),
 }
-_RELATIONSHIP_TYPES = frozenset(spdx3.RelationshipType.NAMED_INDIVIDUALS)
 
 
 def _names(params: dict[str, Any], key: str) -> list[str]:
@@ -68,7 +68,7 @@ def _validate_property(params: dict[str, Any]) -> None:
 
 def _validate_relationship(params: dict[str, Any]) -> None:
     _kind(params)
-    unknown = sorted(set(_names(params, "relationships")) - _RELATIONSHIP_TYPES)
+    unknown = sorted(set(_names(params, "relationships")) - SPDX3_RELATIONSHIP_TYPES)
     if unknown:
         raise ValueError(f"unknown SPDX 3 relationship type(s) {unknown!r}")
     if params.get("direction", "from") not in ("from", "to"):
