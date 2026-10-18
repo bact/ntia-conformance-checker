@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning][semver].
   maturity level the standard declares; a level the standard does not declare
   exits with code 2; `fsct3` declares three levels but
   adds no requirements above the baseline yet
-- Text and HTML reports of YAML-defined standards (not `bsi`) list the message
+- Text and HTML reports of YAML-defined standards list the message
   of each unmet requirement, taken from the rule's `warning`
 - JSON output adds `sbomTypeProvided`
 - SARIF 2.1.0 report (`--output sarif`, or `sarif-sbom` to embed the input
@@ -74,6 +74,12 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Changed
 
+- BSI TR-03183-2 (`-c bsi`) is read from `rules/bsi.yaml` and run by
+  `RuleBasedChecker`, with the ids and provisions of the requirements ontology
+  and its SPDX 3.0.1 mapping; JSON and SARIF reports carry the rule results.
+  Each component needs a dependency list with a completeness; the "if it
+  exists" elements apply only where given; optional ones never block. See
+  `rules/bsi.md`
 - CISA 2026 COMP-003 and COMP-004 (hash value, algorithm) need a `Hash` with a
   non-blank algorithm and value; a package verification code no longer passes.
   New probe `require_hash` (optional `algorithms`)
@@ -105,6 +111,7 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Removed
 
+- `BSIChecker`; use `SbomChecker(file, compliance="bsi", sbom_spec="spdx3")`
 - JSON output no longer has the deprecated `isNtiaConformant` key;
   use `isConformant`
 

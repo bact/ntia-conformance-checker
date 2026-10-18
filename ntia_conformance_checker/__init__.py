@@ -6,7 +6,6 @@
 
 __all__ = [
     "BaseChecker",
-    "BSIChecker",
     "FSCT3Checker",
     "NTIAChecker",
     "RuleBasedChecker",
@@ -16,7 +15,6 @@ __all__ = [
 ]
 
 from .base_checker import BaseChecker
-from .bsi_checker import BSIChecker
 from .fsct_checker import FSCT3Checker
 from .model import RuleResult
 from .ntia_checker import NTIAChecker

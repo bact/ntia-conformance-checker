@@ -5,13 +5,14 @@
 A: It could be due to using an OS package manager (like `apt`) to install
 modules rather than using `pip`. Please try using `pip`.
 
-**Q: Why does my SPDX 3 SBOM fail the BSI compliance check for "deployable form
-URIs" when I copied the example from the BSI document?**
+**Q: Why can my SPDX 3 SBOM not be read when I copied the BSI example for
+"deployable form URIs"?**
 
 A: The BSI TR-03183-2 document contains an example where `binaryArtifact` is
 used as a direct property on a file. However, the official SPDX 3.0.1
-specification strictly defines `binaryArtifact` as an `ExternalRefType`.
-To pass compliance, you must define it inside an `externalRef` array.
+specification strictly defines `binaryArtifact` as an `ExternalRefType`, so
+the file fails to parse ("Unknown property 'binaryArtifact'"). Define it inside
+an `externalRef` array instead.
 
 **Q: I am getting a "NotImplementedError: software_SoftwareArtifact is abstract
 and cannot be implemented" when parsing my SPDX 3 SBOM. How do I fix this?**

@@ -47,7 +47,7 @@ def main() -> None:
     )
 
     spec_id = DEPRECATED_COMPLIANCE_IDS.get(args.comply or "", args.comply or "")
-    # Custom checkers (bsi) declare only the baseline.
+    # An unknown id (the hidden --conform alias takes any) is reported below.
     levels = get_spec(spec_id).maturity_ordinals() if spec_id in spec_ids() else (0,)
     if args.maturity not in levels:
         logging.error(

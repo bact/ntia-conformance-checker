@@ -10,11 +10,14 @@ from __future__ import annotations
 
 import copy
 import json
+import sys
 from pathlib import Path
 from typing import Any, Callable
 
 import pytest
 
+from ntia_conformance_checker import SbomChecker
+from ntia_conformance_checker.main import main
 from ntia_conformance_checker.rule_based_checker import RuleBasedChecker
 
 DATA = Path(__file__).parent / "data"
@@ -207,3 +210,39 @@ def test_spdx2_sbom_is_not_covered() -> None:
     outcomes = set(checker.rule_outcomes().values())
     assert outcomes == {"not-applicable", "out-of-scope"}
     assert checker.check_compliance() is False
+
+
+@pytest.mark.parametrize(
+    ("name", "code", "conformant"),
+    [("compliant_bsi_spdx3", 0, True), ("missing_sha512_hash", 1, False)],
+)
+def test_cli_runs_bsi_with_rule_results(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    name: str,
+    code: int,
+    conformant: bool,
+) -> None:
+    path = str(BSI / f"{name}.json")
+    monkeypatch.setattr(sys, "argv", ["sbomcheck", "-c", "bsi", "-r", "json", path])
+    with pytest.raises(SystemExit) as exc:
+        main()
+    out = json.loads(capsys.readouterr().out)
+    assert (exc.value.code, out["isConformant"]) == (code, conformant)
+    assert len(out["ruleResults"]) == 20
+    assert out["clusterCompliance"] == {
+        "sbom-itself": True,
+        "each-component": conformant,
+    }
+    assert isinstance(
+        SbomChecker(path, compliance="bsi", sbom_spec="spdx3"), RuleBasedChecker
+    )
+
+
+def test_report_does_not_call_a_permission_required(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _checker(BSI / "missing_sha512_hash.json").print_components_missing_info()
+    out = capsys.readouterr().out
+    assert "SHA-512 hash of the deployable component (1)" in out
+    assert "security.txt" not in out

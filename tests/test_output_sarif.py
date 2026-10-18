@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 from pytest import CaptureFixture, MonkeyPatch
 
-from ntia_conformance_checker import BSIChecker
+from ntia_conformance_checker import BaseChecker, SbomChecker
 from ntia_conformance_checker.main import main
 from ntia_conformance_checker.rule_based_checker import RuleBasedChecker
 from ntia_conformance_checker.spec import (
@@ -33,7 +33,7 @@ NTIA_OK = str(DATA / "no_elements_missing" / "SPDXJSONExample-v2.3.spdx.json")
 NTIA_NO_SUPPLIER = str(
     DATA / "missing_supplier_name" / "SPDXJSONExample-v2.3.spdx.json"
 )
-BSI_FILE = next((DATA / "bsi").glob("*.json"))
+BSI = DATA / "bsi"
 G7P = "BOM-G7AI2026-"
 
 
@@ -139,12 +139,40 @@ def test_unparsable_file_reports_the_error() -> None:
     assert run["properties"]["conformant"] is False
 
 
+class _PlainChecker(BaseChecker):
+    """A checker written in code, with no rule outcomes."""
+
+    def check_compliance(self, maturity: int = 0) -> bool:
+        return False
+
+
 def test_checker_without_rule_outcomes_gets_the_base_log() -> None:
-    run = _run(BSIChecker(str(BSI_FILE)))
+    checker = _PlainChecker(NTIA_OK, compliance="plain")
+    run = _run(checker)
     assert not run["results"]
     assert "rules" not in run["tool"]["driver"]
     assert run["properties"]["ruleResults"] is False
-    assert run["properties"]["complianceStandard"] == "bsi"
+    assert run["properties"]["complianceStandard"] == "plain"
+    assert checker.check_compliance() is False
+
+
+def test_bsi_reports_rules_results_and_outcomes() -> None:
+    path = str(BSI / "missing_sha512_hash.json")
+    run = _run(SbomChecker(path, compliance="bsi", sbom_spec="spdx3"))
+    props = run["properties"]
+    assert (props["complianceStandard"], props["ruleResults"]) == ("bsi", True)
+    assert len(run["tool"]["driver"]["rules"]) == 20
+    # A missing requirement is an error; a missing permission has no level.
+    assert sorted((r["ruleId"], r["level"]) for r in run["results"]) == [
+        ("BOM-BSI2025-COMP-007", "error"),
+        ("BOM-BSI2025-COMP-017", "none"),
+    ]
+    outcomes = props["ruleOutcomes"]
+    assert (outcomes["BOM-BSI2025-COMP-011"], outcomes["BOM-BSI2025-DOC-003"]) == (
+        "not-applicable",
+        "out-of-scope",
+    )
+    assert props["conformant"] is False
 
 
 def test_embedding_the_sbom() -> None:

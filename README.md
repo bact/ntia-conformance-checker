@@ -43,7 +43,8 @@ Currently, the supported specifications are:
   [what is checked](ntia_conformance_checker/rules/g7ai.md))
 - [2026 CISA SBOM Minimum Elements][cisa2026] (partial; SPDX 3 only, see
   [what is checked](ntia_conformance_checker/rules/cisa2026.md))
-- [2025 BSI TR-03183-2 v2.1.0 content requirements][bsi]
+- [2025 BSI TR-03183-2 v2.1.0 content requirements][bsi] (SPDX 3 only, see
+  [what is checked](ntia_conformance_checker/rules/bsi.md))
 
 The minimum elements include:
 
@@ -70,11 +71,15 @@ FSCT3 requires these Baseline Attributes as part of its "minimum expected":
 - License
 - Copyright Holder (inside Copyright Notice)
 
-BSI TR-03183-2 introduces stricter requirements for component files and relationships, including:
-- SHA-512 Hashes for deployable components
-- Structured component properties (e.g., container, firmware)
-- Strict concluded licensing targets
-- Explicit dependency completeness definitions
+BSI TR-03183-2 introduces stricter requirements for component files and
+relationships, including:
+
+- An email address or URL for the SBOM creator and each component creator
+- The filename and a SHA-512 hash of each deployable component
+- The structured property (`container` or `firmware`)
+- A dependency list with an explicit completeness for each component
+- Source code and deployable form URIs, other identifiers and original
+  licenses where they exist
 
 Mappings:
 
@@ -87,13 +92,19 @@ Mappings:
   Sub-WG, presented at SPDX General Meeting 2024-12-05.
 
 > [!NOTE]
-> ### BSI TR-03183-2 Implementation Notes
-> To ensure strict compatibility with the official SPDX 3.0.1 specification, this checker adapts two of the examples provided in the BSI TR-03183-2 v2.1.0 document:
-> 
-> * **Deployable URIs:** `binaryArtifact` is evaluated strictly as an `ExternalRefType` inside an `externalRef` array (rather than a direct property of `software_File`).
-> * **Source Code URIs:** Artifacts must be defined using concrete subclasses (e.g., `software_File`, `software_Package`, `software_Snippet`) instead of the abstract `software_SoftwareArtifact` class.
-> 
-> For full technical details regarding these design decisions, please refer to [PR #428](https://github.com/spdx/ntia-conformance-checker/pull/428).
+> ### BSI TR-03183-2 implementation notes
+>
+> The BSI rules read the SPDX 3.0.1 fields of the requirements ontology's
+> mapping and, where it has none, the SPDX 3.0.1 shape of the TR's own
+> Appendix 8.2, adapted to the SPDX 3.0.1 specification:
+>
+> - **Deployable URIs:** `binaryArtifact` is read as an `ExternalRefType` inside
+>   an `externalRef` array (rather than a direct property of `software_File`).
+> - **Source code URIs:** the checker reads an `externalRef` of type `vcs` on
+>   the component. The abstract `software_SoftwareArtifact` class of the TR's
+>   example cannot be parsed; use a concrete subclass such as `software_File`.
+>
+> See [what is checked](ntia_conformance_checker/rules/bsi.md).
 
 ## Installation
 
@@ -154,7 +165,7 @@ choices:
     spdx3       System Package Data Exchange (SPDX) 3.x
 
   Compliance standards (for --comply):
-    bsi         BSI TR-03183-2 v2.1.0 content requirements
+    bsi         BSI TR-03183-2 v2.1.0 SBOM content requirements
     cisa2026    CISA 2026 Minimum Elements for a Software Bill of Materials (SBOM)
     fsct3       2024 CISA Framing Software Component Transparency (minimum expectation)
     fsct3-min   2024 CISA Framing Software Component Transparency (minimum expectation) (deprecated; use fsct3)

@@ -8,7 +8,8 @@
 verdict of the old ``BSIChecker`` and its result per element. The rule-based
 checker must give the same verdict on each, and the same result per element
 unless the difference is explained below. ``KNOWN_VERDICT_DIFFERENCES`` lists
-the inputs on which the two verdicts differ, and why.
+the inputs on which the two verdicts differ, and why. The record and the old
+verdicts below were checked against the old checker before it was removed.
 """
 
 # pylint: disable=missing-function-docstring
@@ -122,34 +123,9 @@ def _new(path: Path) -> RuleBasedChecker:
     return RuleBasedChecker(str(path), compliance="bsi", sbom_spec="spdx3")
 
 
-def _old_record(path: Path) -> dict[str, Any]:
-    """The old checker's verdict and per-element results, as recorded."""
-    # pylint: disable-next=import-outside-toplevel
-    from ntia_conformance_checker.bsi_checker import BSIChecker
-
-    old = BSIChecker(str(path), sbom_spec="spdx3")
-    elements = {
-        attr: (
-            old._all_provided(getattr(old, attr))  # pylint: disable=protected-access
-            if attr.startswith("components_without_")
-            else bool(getattr(old, attr))
-        )
-        for attr in OLD_TO_NEW
-    }
-    return {
-        "conformant": bool(old.doc) and old.check_compliance(),
-        "elements": elements,
-    }
-
-
 def test_record_covers_every_fixture_and_element() -> None:
     assert sorted(RECORD) == FILES
     assert all(sorted(r["elements"]) == sorted(OLD_TO_NEW) for r in RECORD.values())
-
-
-@pytest.mark.parametrize("rel", FILES)
-def test_record_is_what_the_old_checker_says(rel: str) -> None:
-    assert _old_record(DATA / rel) == RECORD[rel]
 
 
 @pytest.mark.parametrize("rel", FILES)
@@ -295,7 +271,5 @@ def _write(tmp_path: Path, edit: Callable[[Graph], None]) -> Path:
 def test_known_verdict_differences(
     tmp_path: Path, edit: Callable[[Graph], None], old: bool, new: bool, why: str
 ) -> None:
-    path = _write(tmp_path, edit)
     assert why and old is not new
-    assert _old_record(path)["conformant"] is old
-    assert _new(path).check_compliance() is new
+    assert _new(_write(tmp_path, edit)).check_compliance() is new

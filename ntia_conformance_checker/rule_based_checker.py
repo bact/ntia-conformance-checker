@@ -482,6 +482,8 @@ class RuleBasedChecker(BaseChecker):
         ]
         results = self.rule_results()
         for rule in ordered:  # rules scoped by kind list their components too
+            if rule.provision == "permission":  # never required
+                continue
             found = results[self._spec.rule_id(rule)].findings
             components = [
                 (f.component_name, f.component_id)

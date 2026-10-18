@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from typing import Any, final
 
-from ntia_conformance_checker.bsi_checker import BSIChecker
-
 from .base_checker import BaseChecker
 from .constants import SUPPORTED_SBOM_SPECS
 from .registry import spec_ids
@@ -27,14 +25,15 @@ class SbomChecker(BaseChecker):
     a subclass of BaseChecker based on the given "compliance" argument
     during instantiation.
 
-    Currently there are three compliance standards available:
+    The compliance standards are:
 
     - **"ntia" (default)**, returns an instance of NTIAChecker
       - NTIAChecker has the same behavior as the original SbomChecker
     - **"fsct3"**, returns an instance of FSCT3Checker
       - FSCT3Checker is a checker for FSCT 3rd Edition Baseline Attributes
       - "fsct3-min" is a deprecated alias
-    - **"bsi"**, returns an instance of BSIChecker
+    - any other id of a ``rules/*.yaml`` file (such as "bsi", "cisa2026",
+      "g7ai"), returns an instance of RuleBasedChecker
 
     If "compliance" is not recognized, SbomChecker raises a ValueError.
     """
@@ -77,9 +76,6 @@ class SbomChecker(BaseChecker):
             from .fsct_checker import FSCT3Checker
 
             return FSCT3Checker(file, validate, compliance, sbom_spec)
-
-        if compliance == "bsi":
-            return BSIChecker(file, validate, sbom_spec=sbom_spec)
 
         if compliance in spec_ids():  # a standard defined only by a rules/*.yaml
             return RuleBasedChecker(file, validate, compliance, sbom_spec)

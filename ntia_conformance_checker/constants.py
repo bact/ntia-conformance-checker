@@ -38,12 +38,8 @@ VALID_SPDX3_COMPOSITION_RELATIONSHIPS = {
 # Ids that older releases accepted for a renamed standard -> current id.
 DEPRECATED_COMPLIANCE_IDS = {"fsct3-min": "fsct3"}
 
-# Standards defined by rules/*.yaml take their description from the spec title;
-# standards implemented in code are listed here.
-SUPPORTED_COMPLIANCE_STANDARDS_DESC = {
-    "bsi": "BSI TR-03183-2 v2.1.0 Cyber Resilience Requirements for Manufacturers and Products",
-    **descriptions(),
-}
+# Every standard is defined by a rules/*.yaml file and described by its title.
+SUPPORTED_COMPLIANCE_STANDARDS_DESC = descriptions()
 SUPPORTED_COMPLIANCE_STANDARDS_DESC.update(
     {
         old: SUPPORTED_COMPLIANCE_STANDARDS_DESC[new]

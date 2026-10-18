@@ -19,7 +19,7 @@
 spec:
   id: bsi
   rule_prefix: BOM-BSI2025
-  title: BSI TR-03183-2 v2.1.0 Cyber Resilience Requirements for Manufacturers and Products
+  title: BSI TR-03183-2 v2.1.0 SBOM content requirements
   uri: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03183/BSI-TR-03183-2_v2_1_0.html
   sbom_specs: [spdx3]
   taxonomies:
