@@ -93,7 +93,9 @@ def _text(checker: BaseChecker, capsys: CaptureFixture[str], maturity: int = 0) 
 
 # ---- parity with the checkers the engine replaced --------------------------
 # golden_verdicts.json: "<file>|<sbom spec>|<standard>" -> "<verdict>:<row bits>",
-# recorded from the hand-written checkers before the engine existed.
+# recorded from the hand-written checkers before the engine existed; the
+# identifier bit of SPDX 3 files whose packages have only an spdxId is 0 since
+# the spdxId alone stopped counting as a unique identifier.
 
 _GOLDEN = json.loads((DATA / "golden_verdicts.json").read_text(encoding="utf-8"))
 
