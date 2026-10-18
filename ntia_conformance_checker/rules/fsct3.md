@@ -28,7 +28,7 @@ Outcomes are reported as for [`g7ai`](g7ai.md).
 | COMP-001 | Component Name | `name` on every package |
 | COMP-002 | Version | `software_packageVersion` on every package |
 | COMP-003 | Supplier Name | `suppliedBy` on every package |
-| COMP-004 | Unique Identifier | on SPDX 3, the `spdxId` that every element has, so it cannot fail (see Limits) |
+| COMP-004 | Unique Identifier | on SPDX 3, `software_packageUrl`, `software_contentIdentifier`, or an `externalIdentifier` of type packageUrl, cpe22, cpe23, swid, swhid or gitoid, on every package (the `spdxId` does not count) |
 | COMP-007 | License | a `hasConcludedLicense` relationship from every package |
 | COMP-008 | Copyright Notice | `software_copyrightText` on every package |
 
@@ -40,8 +40,8 @@ elements, the composition and dependency relationships (`contains`,
 `hasProvidedDependency`) and, as `reach_via` in `fsct3.yaml` declares,
 `trainedOn` and `testedOn`: a dataset that a reachable model was trained or
 tested on is judged like any other component. A package that is not reachable
-is not evaluated. COMP-004 on
-SPDX 3 is the exception: it looks at every package.
+is not evaluated, except by COMP-004 on SPDX 2, which checks the SPDXID of every
+package.
 
 ## Not checked (catalogue-only)
 
@@ -56,11 +56,12 @@ missing. The default text and HTML reports do not mention them.
 
 ## Limits
 
-- COMP-004 on SPDX 3 accepts the `spdxId`, which the mapping lists as a close
-  match, so a package with no package URL, no external identifier and no content
-  identifier still passes. It reports nothing about identifier quality. A
-  stricter reading (a package URL or another identifier type) is not applied:
-  it would also change the NTIA check, which shares this logic.
+- COMP-004 on SPDX 3 does not accept the `spdxId` alone, though the mapping
+  lists it as a close match: every element has one, so it would never fail. The
+  NTIA identifier check and CISA 2026 COMP-005 share this definition. The
+  identifier's value is not checked beyond being non-blank and not
+  `NOASSERTION`. A `urlScheme` external identifier does not count: it names a
+  resource, not the component.
 - COMP-007 reads `hasConcludedLicense` only. A package with only a
   `hasDeclaredLicense` is reported missing, as the mapping makes the declared
   license a close match, not an exact one.

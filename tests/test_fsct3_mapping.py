@@ -16,6 +16,10 @@ from typing import TYPE_CHECKING
 import pytest
 
 from ntia_conformance_checker import get_spec
+from ntia_conformance_checker.adapters.spdx3_adapter import (
+    IDENTIFIER_PROPERTIES,
+    IDENTIFIER_TYPES,
+)
 
 if TYPE_CHECKING:
     from ntia_conformance_checker.spec import SpecRule
@@ -46,8 +50,7 @@ ATTRIBUTES = {
     "name": "name",
     "version": "packageVersion",
     "supplier": "suppliedBy",
-    # On SPDX 3 the checker reads the spdxId (a close match), not the package URL.
-    "unique_identifier": "spdxId",
+    "unique_identifier": "packageUrl",
     "concluded_license": "hasConcludedLicense",
     "copyright_notice": "copyrightText",
 }
@@ -97,3 +100,13 @@ def test_catalogue_only_rules_are_the_listed_ones() -> None:
     assert {k for k, r in RULES.items() if r.status == "catalogue-only"} == set(
         CATALOGUE_ONLY
     )
+
+
+def test_identifiers_accepted_are_mapped_and_spdx_id_is_not() -> None:
+    """COMP-004 accepts the mapped identifiers (and CISA COMP-005 the same ones),
+    never the bare spdxId."""
+    mapped = _mapped_names(ROWS["unique-identifier"])
+    accepted = set(IDENTIFIER_TYPES) | {
+        p.removeprefix("software_") for p in IDENTIFIER_PROPERTIES
+    }
+    assert accepted - {"externalIdentifier"} == mapped - {"spdxId"}

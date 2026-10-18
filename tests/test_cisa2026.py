@@ -17,6 +17,7 @@ from typing import Any, Callable
 import pytest
 
 from ntia_conformance_checker import get_spec
+from ntia_conformance_checker.adapters.spdx3_adapter import IDENTIFIER_PROPERTIES
 from ntia_conformance_checker.model import RuleResult
 from ntia_conformance_checker.rule_based_checker import RuleBasedChecker
 from ntia_conformance_checker.spec import Spec
@@ -165,6 +166,36 @@ def test_a_package_unreachable_from_the_root_is_not_evaluated(tmp_path: Path) ->
     """Documented limit: only packages reachable from the root are judged."""
     got = _edit(tmp_path, _unlink_lib)
     assert got[P + "COMP-005"] == "present"
+
+
+def _identifier(kind: str) -> Callable[[list[dict[str, Any]]], None]:
+    def edit(graph: list[dict[str, Any]]) -> None:
+        lib = _el(graph, "Lib")
+        lib.pop("software_packageUrl")
+        lib["externalIdentifier"] = [
+            {
+                "type": "ExternalIdentifier",
+                "externalIdentifierType": kind,
+                "identifier": "https://example.com/lib",
+            }
+        ]
+
+    return edit
+
+
+@pytest.mark.parametrize(
+    ("kind", "outcome"),
+    [("cpe23", "present"), ("swid", "present"), ("urlScheme", "missing")],
+)
+def test_identifier_types_are_those_the_shared_check_accepts(
+    tmp_path: Path, kind: str, outcome: str
+) -> None:
+    """COMP-005 and the NTIA/FSCT identifier check share one definition."""
+    assert _edit(tmp_path, _identifier(kind))[P + "COMP-005"] == outcome
+    slug = "cisa2026-component-identifiers-missing"
+    rule = next(r for r in get_spec("cisa2026").rules if r.slug == slug)
+    assert rule.probe is not None
+    assert tuple(rule.probe.params["properties"]) == IDENTIFIER_PROPERTIES
 
 
 NO_REACH_VIA = dataclasses.replace(get_spec("cisa2026"), reach_via=())

@@ -234,6 +234,20 @@ _FALSE_PASSES = {
         ),
         "MDL-002",
     ),
+    "urlScheme-only identifier": (
+        _set(
+            "Model1",
+            software_packageUrl=None,
+            externalIdentifier=[
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "urlScheme",
+                    "identifier": "https://example.com/model",
+                }
+            ],
+        ),
+        "MDL-002",
+    ),
 }
 
 

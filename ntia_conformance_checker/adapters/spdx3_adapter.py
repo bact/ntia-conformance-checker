@@ -44,9 +44,17 @@ _KIND_TYPES: dict[str, type[spdx3.SHACLObject]] = {
 }
 
 
-# External identifier types that identify a component (not an email, CVE, ...).
-_IDENTIFIER_TYPES = frozenset(
-    {"packageUrl", "cpe22", "cpe23", "swid", "swhid", "gitoid", "urlScheme"}
+# External identifier types that identify a component (not an email, CVE, or a
+# urlScheme, which names a resource rather than the component).
+IDENTIFIER_TYPES = frozenset(
+    {"packageUrl", "cpe22", "cpe23", "swid", "swhid", "gitoid"}
+)
+# Package properties that carry such an identifier; the spdxId every element
+# has is not one. Rules that check component identifiers list these.
+IDENTIFIER_PROPERTIES = (
+    "software_packageUrl",
+    "externalIdentifier",
+    "software_contentIdentifier",
 )
 
 
@@ -116,7 +124,7 @@ def _property_present(
             item
             for item in value or []
             if str(getattr(item, "externalIdentifierType", "")).rsplit("/", 1)[-1]
-            in _IDENTIFIER_TYPES
+            in IDENTIFIER_TYPES
         ]
     return _value_present(value)
 
@@ -265,22 +273,12 @@ class Spdx3Adapter(SbomAdapter):
     def get_components_without_identifiers(
         self, reachable_ids: set[str]
     ) -> list[tuple[str, str]]:
-        """
-        Note that SPDX 3 requires identifiers for all elements,
-        so this should not happen in a valid SPDX 3 document.
-        The spdx-python-model JSON deserializer will raise a ValueError
-        if any element is missing an identifier.
-        """
-        return [
-            (name or "", spdx_id or "")
-            for name, spdx_id, _ in iter_objects_with_property(
-                self.object_set,
-                spdx3.software_Package,
-                "spdxId",
-                reachable_ids=None,
-            )
-            if _is_blank(spdx_id)
-        ]
+        """Reachable packages with no identifier among :data:`IDENTIFIER_PROPERTIES`
+        (a package URL, a content identifier, or an external identifier of an
+        identifying type). The ``spdxId`` every element has does not count."""
+        return self.get_components_without_properties(
+            "component", IDENTIFIER_PROPERTIES, reachable_ids
+        )
 
     def _is_blank_license(self, ref: str) -> bool:
         """Check whether a license reference carries no license information."""

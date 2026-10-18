@@ -15,6 +15,7 @@ from typing import Any, Callable
 
 import pytest
 
+from ntia_conformance_checker.model import RuleResult
 from ntia_conformance_checker.rule_based_checker import RuleBasedChecker
 
 from ._ai_graph import add_model_and_dataset
@@ -48,7 +49,7 @@ def _complete(graph: list[dict[str, Any]]) -> None:
     )
 
 
-def _outcomes(tmp_path: Path, *edits: Edit) -> dict[str, str]:
+def _results(tmp_path: Path, *edits: Edit) -> dict[str, RuleResult]:
     doc = json.loads(SOURCE.read_text(encoding="utf-8"))
     graph = copy.deepcopy(doc["@graph"])
     _complete(graph)
@@ -59,7 +60,11 @@ def _outcomes(tmp_path: Path, *edits: Edit) -> dict[str, str]:
     path.write_text(json.dumps(doc), encoding="utf-8")
     checker = RuleBasedChecker(str(path), compliance="fsct3", sbom_spec="spdx3")
     assert checker.doc is not None and not checker.parsing_errors
-    return {k[len(P) :]: v.outcome for k, v in checker.rule_results().items()}
+    return checker.rule_results()
+
+
+def _outcomes(tmp_path: Path, *edits: Edit) -> dict[str, str]:
+    return {k[len(P) :]: v.outcome for k, v in _results(tmp_path, *edits).items()}
 
 
 def _info(prop: str) -> Edit:
@@ -148,14 +153,24 @@ def test_a_blank_supplier_or_copyright_counts_as_missing(
     assert _outcomes(tmp_path, blank)["COMP-008"] == "missing"
 
 
-def test_unique_identifier_cannot_fail_on_spdx3(tmp_path: Path) -> None:
-    """Documented limit: the spdxId every element has is accepted."""
-    got = _outcomes(
-        tmp_path,
-        _drop("Lib", "software_packageUrl"),
-        _drop("App", "software_packageUrl"),
-    )
-    assert got["COMP-004"] == "present"
+@pytest.mark.parametrize(
+    ("edits", "missing"),
+    [
+        ((_drop("Lib", "software_packageUrl"),), ["Lib"]),
+        (
+            (_drop("Lib", "software_packageUrl"), _drop("App", "software_packageUrl")),
+            ["App", "Lib"],
+        ),
+    ],
+    ids=["one", "both"],
+)
+def test_a_package_with_only_an_spdx_id_has_no_unique_identifier(
+    tmp_path: Path, edits: tuple[Edit, ...], missing: list[str]
+) -> None:
+    """The spdxId every element has is not a unique identifier on its own."""
+    got = _results(tmp_path, *edits)[P + "COMP-004"]
+    assert got.outcome == "missing"
+    assert [f.component_id for f in got.findings] == [B + n for n in missing]
 
 
 def test_a_contains_relationship_stands_in_for_a_dependency(tmp_path: Path) -> None:

@@ -66,6 +66,11 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Changed
 
+- SPDX 3 unique identifier (NTIA, FSCT 2024 COMP-004): a reachable package
+  needs a package URL, a content identifier or an external identifier of type
+  packageUrl, cpe22, cpe23, swid, swhid or gitoid; the bare `spdxId` no longer
+  counts. A `urlScheme` external identifier no longer counts for CISA 2026
+  COMP-005 or G7 AI MDL-002 and DP-004
 - CISA 2026 and FSCT 2024 also follow `trainedOn` and `testedOn` from the root
   (the spec's new `reach_via` list), so the component rules judge a dataset a
   reachable model was trained or tested on
