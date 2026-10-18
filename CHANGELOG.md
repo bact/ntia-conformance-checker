@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning][semver].
   see `rules/g7ai.md`
 - JSON output adds `ruleResults` and `clusterCompliance` for YAML-defined
   standards
+- G7 AI: when a project's root is not an AI package and exactly one model is
+  reachable from it, the System-level property rules read that model;
+  `systemJudgedByModel` in the JSON report and the SARIF run properties
 - `RuleBasedChecker`, `RuleResult` and `get_spec` are exported from the
   package; `RuleBasedChecker.rule_outcomes()` returns the outcome of every
   rule by id, sorted

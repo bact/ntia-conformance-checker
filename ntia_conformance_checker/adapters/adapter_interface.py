@@ -165,6 +165,13 @@ class SbomAdapter(ABC):
         ``reachable_ids`` is ``None``)."""
         return False
 
+    def system_stand_in(  # pylint: disable=unused-argument
+        self, reachable_ids: set[str]
+    ) -> tuple[str, str] | None:
+        """``(name, spdx_id)`` of the model that stands for the system, if one
+        does (see the SPDX 3 adapter); ``None`` otherwise."""
+        return None
+
     def get_components_without_properties(
         self, kind: str, properties: tuple[str, ...], reachable_ids: set[str]
     ) -> list[tuple[str, str]]:

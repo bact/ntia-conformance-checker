@@ -556,6 +556,8 @@ def build_sarif(
     }
     if spec is not None:
         run["properties"]["ruleOutcomes"] = {k: v.outcome for k, v in outcomes.items()}
+        stand_in = checker.system_judged_by_model()
+        run["properties"]["systemJudgedByModel"] = stand_in[0] if stand_in else None
     if artifact_uri:
         run["artifacts"] = [_artifact_entry(checker, artifact_uri, embed_sbom)]
     return {"version": SARIF_VERSION, "$schema": SARIF_SCHEMA, "runs": [run]}

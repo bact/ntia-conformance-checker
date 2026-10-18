@@ -171,6 +171,11 @@ class RuleBasedChecker(BaseChecker):
             kind, self.reachable_component_ids if reachable_only else None
         )
 
+    def system_judged_by_model(self) -> tuple[str, str] | None:
+        """``(name, spdx_id)`` of the model the System-level rules read in place
+        of a root that is not an AI package, or ``None`` (see the adapter)."""
+        return self.adapter.system_stand_in(self.reachable_component_ids)
+
     def components_without_property(
         self, kind: str, properties: tuple[str, ...]
     ) -> list[tuple[str, str]]:
@@ -433,7 +438,9 @@ class RuleBasedChecker(BaseChecker):
                     for r in blocking
                 )
             )
+        stand_in = self.system_judged_by_model()
         return {
+            "systemJudgedByModel": stand_in[0] if stand_in else None,
             "ruleResults": [
                 {
                     "id": self._spec.rule_id(rule),
