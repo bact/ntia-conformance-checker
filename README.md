@@ -23,6 +23,15 @@ It supports SPDX specification versions 2.2, 2.3, and 3.0.
 A web-based version of the tool is available (no installation needed) at:
 <https://tools.spdx.org/app/ntia_checker/>
 
+## Exit codes
+
+`sbomcheck` exits with 0 when the SBOM conforms. It exits with 1 when the SBOM
+does not conform, and also when the file cannot be read or parsed (the report
+then says so: every rule is `missing` and `executionSuccessful` is false in the
+SARIF). It exits with 2 for a usage error, an undeclared maturity level, or a
+report file that could not be written. When the SPDX version of the file cannot
+be determined, no SARIF file is written.
+
 ## Conformance
 
 Currently, the supported specifications are:
