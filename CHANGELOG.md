@@ -79,9 +79,9 @@ and this project adheres to [Semantic Versioning][semver].
   non-blank algorithm and value; a package verification code no longer passes.
   New probe `require_hash` (optional `algorithms`)
 - BREAKING CHANGE: SPDX 3 unique identifier (NTIA, FSCT 2024 COMP-004): a
-  reachable package needs a package URL, a content identifier or an external identifier of type
-  packageUrl, cpe22, cpe23, swid, swhid or gitoid; the bare `spdxId` no longer
-  counts. A `urlScheme` external identifier no longer counts for CISA 2026
+  reachable package needs a package URL, a content identifier or an external
+  identifier of type packageUrl, cpe22, cpe23, swid, swhid or gitoid; the bare
+  `spdxId` no longer counts. A `urlScheme` external identifier no longer counts for CISA 2026
   COMP-005 or G7 AI MDL-002 and DP-004
 - SARIF rule text says when a rule is conditional or only listed, and JSON
   `ruleResults` and SARIF rule properties carry `conditional`
