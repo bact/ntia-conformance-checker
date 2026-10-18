@@ -323,6 +323,13 @@ class SpecRule:
     """Probe to run for this rule.  ``None`` for catalogue-only and TBD
     rules (they appear in the catalogue but no probe is invoked)."""
 
+    applies_when: ProbeRef | None = None
+    """Condition for a conditional requirement ("required if it exists"): a
+    probe whose findings are the components (or, for a document probe, the
+    document) the rule does not apply to.  When it excludes every component of
+    the rule's kind, the rule is ``not-applicable``.  ``None`` for an
+    unconditional rule."""
+
     # -- Output mappings --------------------------------------------------
 
     oscal_control_id: str = ""

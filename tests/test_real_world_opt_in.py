@@ -21,6 +21,7 @@ pytest_plugins = ["pytester"]
 def test_real_world_marker_is_opt_in(
     pytester: pytest.Pytester, args: list[str], outcome: dict[str, int]
 ) -> None:
+    """Without the option the real-world test is skipped; with it, it runs."""
     pytester.makeconftest((Path(__file__).parent / "conftest.py").read_text("utf-8"))
     pytester.makepyfile("""
         import pytest

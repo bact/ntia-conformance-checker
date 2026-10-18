@@ -67,3 +67,6 @@ class NullAdapter(SbomAdapter):
 
     def document_declares_any(self, properties: tuple[str, ...]) -> bool:
         return False
+
+    def document_has_contact(self, properties: tuple[str, ...]) -> bool:
+        return False

@@ -73,6 +73,9 @@ rules:
     probe:                       # the check to run; omit for catalogue-only/tbd
       name: require_component_attribute   # registered probe (probes/presence.py)
       params: { attribute: name }         # kwargs passed to the probe
+    # applies_when: { name: ..., params: {...} }  # optional condition, a probe:
+    #                            # the rule applies only where it finds nothing
+    #                            # ("required if it exists"); see README.md
     json_key: componentNames     # key in output_json(); omit to skip JSON output
 
   # A document-level rule using the other built-in probe.

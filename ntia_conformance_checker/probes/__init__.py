@@ -16,10 +16,14 @@ probe as a side effect:
 * :file:`probes/presence.py` -- ``require_component_attribute`` and
   ``require_document_attribute``, which cover every active NTIA and FSCT rule.
 * :file:`probes/spdx3.py` -- SPDX 3 probes scoped to a kind of component:
-  ``require_property`` (one of some properties), ``require_relationship``
-  (in one of some relationships), ``require_hash`` (a ``Hash`` with a
-  non-blank algorithm and value, optionally of given ``algorithms``), and
-  ``require_document_property``.
+  ``require_property`` (one of some properties, or one vocabulary value such
+  as ``externalRef/vcs``), ``require_relationship`` (in one of some
+  relationships, optionally declaring completeness or to a target with a
+  property), ``require_hash`` (a ``Hash`` with a non-blank algorithm and value,
+  optionally of given ``algorithms``), ``require_contact`` (an agent with an
+  email address or URL); property and hash probes can also read the elements
+  a component links to (``via``). ``require_document_property`` and
+  ``require_document_contact`` read the document.
 """
 
 from __future__ import annotations

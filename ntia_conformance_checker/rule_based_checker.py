@@ -18,10 +18,16 @@ from typing import Any, ClassVar
 
 from .base_checker import BaseChecker
 from .constants import DEFAULT_SBOM_SPEC, DEPRECATED_COMPLIANCE_IDS
-from .model import COMPONENT_ELEMENT_IDS, COMPONENT_KINDS, Finding, RuleResult
+from .model import (
+    COMPONENT_ELEMENT_IDS,
+    COMPONENT_KINDS,
+    Finding,
+    Outcome,
+    RuleResult,
+)
 from .probes import lookup
 from .registry import get_spec
-from .spec import Spec, SpecRule
+from .spec import ProbeRef, Spec, SpecRule
 
 # Element id -> (name in BaseChecker.MIN_ELEMENTS, BaseChecker attribute listing
 # the components that lack the element).
@@ -179,33 +185,58 @@ class RuleBasedChecker(BaseChecker):
         return self.adapter.system_stand_in(self.reachable_component_ids)
 
     def components_without_property(
-        self, kind: str, properties: tuple[str, ...]
+        self, kind: str, properties: tuple[str, ...], via: tuple[str, ...] = ()
     ) -> list[tuple[str, str]]:
-        """Components of ``kind`` declaring none of the SPDX 3 ``properties``."""
+        """Components of ``kind`` declaring none of the SPDX 3 ``properties``,
+        themselves or on an element they link to through ``via``."""
         return self.adapter.get_components_without_properties(
-            kind, properties, self.reachable_component_ids
+            kind, properties, self.reachable_component_ids, via
         )
 
     def components_without_hash(
-        self, kind: str, algorithms: tuple[str, ...]
+        self, kind: str, algorithms: tuple[str, ...], via: tuple[str, ...] = ()
     ) -> list[tuple[str, str]]:
         """Components of ``kind`` with no hash (of one of ``algorithms``, when
-        given)."""
+        given), themselves or on an element they link to through ``via``."""
         return self.adapter.get_components_without_hash(
-            kind, algorithms, self.reachable_component_ids
+            kind, algorithms, self.reachable_component_ids, via
         )
 
-    def components_without_relationship(
-        self, kind: str, relationships: tuple[str, ...], direction: str
+    def components_without_relationship(  # pylint: disable=too-many-arguments
+        self,
+        kind: str,
+        relationships: tuple[str, ...],
+        direction: str,
+        completeness: bool = False,
+        target_has: tuple[str, ...] = (),
     ) -> list[tuple[str, str]]:
         """Components of ``kind`` in none of the ``relationships``."""
         return self.adapter.get_components_without_relationships(
-            kind, relationships, direction, self.reachable_component_ids
+            kind,
+            relationships,
+            direction,
+            self.reachable_component_ids,
+            completeness=completeness,
+            target_has=target_has,
+        )
+
+    def components_without_contact(
+        self, kind: str, properties: tuple[str, ...]
+    ) -> list[tuple[str, str]]:
+        """Components of ``kind`` whose agents in ``properties`` give no email
+        address or URL."""
+        return self.adapter.get_components_without_contact(
+            kind, properties, self.reachable_component_ids
         )
 
     def document_declares(self, properties: tuple[str, ...]) -> bool:
         """Whether the document declares any of the SPDX 3 ``properties``."""
         return self.adapter.document_declares_any(properties)
+
+    def document_has_contact(self, properties: tuple[str, ...]) -> bool:
+        """Whether an agent in the creation info's ``properties`` gives an
+        email address or URL."""
+        return self.adapter.document_has_contact(properties)
 
     # ---- Running the rules --------------------------------------------------
 
@@ -256,10 +287,50 @@ class RuleBasedChecker(BaseChecker):
             )
         if kind is not None and kind != "component" and not self.has_components(kind):
             return self._no_component_result(rule_id, kind)
-        found = tuple(lookup(rule.probe.name)(self, **params))
-        return RuleResult(
-            rule_id=rule_id, outcome="missing" if found else "present", findings=found
+        found = self._findings(rule.probe, rule.applies_when)
+        if found is None:  # the rule's condition holds nowhere
+            outcome: Outcome = "not-applicable"
+        else:
+            outcome = "missing" if found else "present"
+        return RuleResult(rule_id=rule_id, outcome=outcome, findings=found or ())
+
+    def _findings(
+        self, probe: ProbeRef, condition: ProbeRef | None
+    ) -> tuple[Finding, ...] | None:
+        """The probe's findings where the rule's condition holds, or ``None``
+        when the condition excludes everything."""
+        excluded: set[str] = set()
+        if condition is not None:
+            unmet = self._unmet_condition(condition)
+            if unmet is None:
+                return None
+            excluded = unmet
+        return tuple(
+            f
+            for f in lookup(probe.name)(self, **probe.params)
+            if f.component_id not in excluded
         )
+
+    def _unmet_condition(self, condition: ProbeRef) -> set[str] | None:
+        """Ids of the components a rule's ``applies_when`` condition excludes,
+        or ``None`` when it excludes everything (the rule does not apply).
+
+        A condition scoped to a kind of component excludes the components it
+        finds; a document condition that finds anything excludes the document.
+        """
+        unmet = {
+            f.component_id for f in lookup(condition.name)(self, **condition.params)
+        }
+        kind = condition.params.get("kind")
+        if kind is None:
+            return None if unmet else set()
+        ids = {
+            spdx_id
+            for _, spdx_id in self.adapter.get_components_of_kind(
+                kind, self.reachable_component_ids
+            )
+        }
+        return None if ids <= unmet else unmet
 
     def _no_component_result(self, rule_id: str, kind: str) -> RuleResult:
         """Result of a kind-scoped rule when no reachable component has that kind.

@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning][semver].
 
 - FSCT 2024 (`-c fsct3`): the SPDX 3.0.1 mapping is checked against the rules
   and `rules/fsct3.md` lists what is and is not checked
+- Rules can be conditional ("required if it exists"): `applies_when` takes a
+  probe, and the rule applies only where it finds nothing; probes can ask for
+  one vocabulary value (`externalRef/vcs`), read linked elements (`via`),
+  require a declared relationship completeness or a target property, and
+  check that an agent gives an email address or URL (`require_contact`,
+  `require_document_contact`); see `rules/README.md`
 - `pytest --real-world` runs the slow tests on real-world SBOMs, skipped by
   default; the release workflow runs them before publishing to PyPI
 - GitHub releases attach the wheel, the sdist and the wheel's SPDX 3 SBOM,

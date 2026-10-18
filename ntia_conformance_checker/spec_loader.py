@@ -40,6 +40,8 @@ the schema:
           probe:
             name: require_component_attribute
             params: { attribute: supplier }
+          # applies_when: a probe; the rule applies only where it finds nothing
+          # (a conditional requirement); see rules/README.md
 """
 
 from __future__ import annotations
@@ -79,7 +81,7 @@ _TOP_LEVEL_ALLOWED = {"spec", "categories", "maturity_levels", "rules"}
 _CATEGORY_ALLOWED = {f.name for f in fields(SpecCategory)}
 _MATURITY_ALLOWED = {f.name for f in fields(SpecMaturity)}
 _TAXONOMIES_ALLOWED = {f.name for f in fields(SpecTaxonomies)}
-_RULE_ALLOWED = {f.name for f in fields(SpecRule)} - {"probe"}
+_RULE_ALLOWED = {f.name for f in fields(SpecRule)} - {"probe", "applies_when"}
 
 # Status and Provision are type-hint-only Literals; the dataclass does no
 # runtime checking and the loader builds rules via **kwargs, so they must be
@@ -375,6 +377,7 @@ def _build_rule(
         )
     data = dict(raw)  # shallow copy so we can pop
     probe_raw = data.pop("probe", None)
+    condition_raw = data.pop("applies_when", None)
     _reject_unknown(data, _RULE_ALLOWED, "rules[]", path)
     _check_fields(SpecRule, data, "rules[]", path)
     if not 1 <= data["number"] <= 999:  # rendered as three digits (NNN)
@@ -411,7 +414,12 @@ def _build_rule(
                 f"got {uris!r}"
             )
         data["element_concept_uris"] = tuple(uris)
-    return SpecRule(**data, probe=_build_rule_probe(probe_raw, data, path))
+    probe = _build_rule_probe(probe_raw, data, path)
+    return SpecRule(
+        **data,
+        probe=probe,
+        applies_when=_build_condition(condition_raw, probe, data, path),
+    )
 
 
 def _build_rule_probe(
@@ -439,6 +447,34 @@ def _build_rule_probe(
     if probe is not None:
         _check_probe_attribute(probe, data.get("element_id", ""), path)
     return probe
+
+
+def _build_condition(
+    raw: Any, probe: ProbeRef | None, data: dict[str, Any], path: Path
+) -> ProbeRef | None:
+    """Build a rule's ``applies_when`` condition: a probe like ``probe``, on
+    the rule's own kind of component or on the document, for a checked rule."""
+    if raw is None:
+        return None
+    if probe is None:
+        raise SpecLoadError(
+            f"{path}: rule {data['slug']!r} has applies_when but no probe to "
+            f"condition"
+        )
+    condition = _build_probe(raw, path)
+    if probes.attribute_scope(condition.name) is not None:
+        raise SpecLoadError(
+            f"{path}: rule {data['slug']!r} applies_when cannot use "
+            f"{condition.name!r}; use a probe scoped by kind"
+        )
+    kind = condition.params.get("kind")
+    if kind is not None and kind != probe.params.get("kind"):
+        raise SpecLoadError(
+            f"{path}: rule {data['slug']!r} applies_when must be on the rule's "
+            f"kind of component ({probe.params.get('kind')!r}) or the document; "
+            f"got {kind!r}"
+        )
+    return condition
 
 
 def _check_probe_attribute(probe: ProbeRef, element_id: str, path: Path) -> None:

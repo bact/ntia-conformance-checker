@@ -115,6 +115,9 @@ def _property_present(
     With ``resolves``, an element reference that points to nothing in the
     document does not count.
     """
+    name, _, wanted = prop.partition("/")
+    if wanted:  # "externalRef/vcs": a value (or typed object) of that name
+        return any(_is_value_named(item, wanted) for item in _items(obj, name))
     value = getattr(obj, prop, None)
     if prop in _REFERENCE_PROPERTIES and resolves is not None:
         items = list(value) if isinstance(value, (list, spdx3.ListProxy)) else [value]
@@ -127,6 +130,56 @@ def _property_present(
             in IDENTIFIER_TYPES
         ]
     return _value_present(value)
+
+
+def _local_name(value: object) -> str:
+    """The last segment of an IRI (``.../ExternalRefType/vcs`` -> ``vcs``)."""
+    return str(value or "").rsplit("/", 1)[-1].strip()
+
+
+def _items(obj: object, prop: str) -> list[Any]:
+    """The values of SPDX 3 property ``prop`` of ``obj``, as a list."""
+    value = getattr(obj, prop, None)
+    if isinstance(value, (list, spdx3.ListProxy)):
+        return list(value)
+    return [] if value is None else [value]
+
+
+# Attribute naming the type of a typed value object.
+_TYPE_ATTRIBUTES: tuple[tuple[type[spdx3.SHACLObject], str], ...] = (
+    (spdx3.ExternalRef, "externalRefType"),
+    (spdx3.ExternalIdentifier, "externalIdentifierType"),
+)
+
+
+def _is_value_named(item: object, wanted: str) -> bool:
+    """Whether a property value is the vocabulary entry ``wanted``: an IRI with
+    that local name, or an external reference or identifier of that type that
+    says something (has a locator or identifier)."""
+    if isinstance(item, spdx3.SHACLObject):
+        attr = next((a for cls, a in _TYPE_ATTRIBUTES if isinstance(item, cls)), "")
+        return bool(attr) and (
+            _local_name(getattr(item, attr, None)) == wanted and _object_present(item)
+        )
+    return isinstance(item, str) and _local_name(item) == wanted
+
+
+def _has_contact(agent: object) -> bool:
+    """Whether ``agent`` is a person or organization with an email address, or
+    a URL (an ``urlScheme`` or ``other`` external identifier), as BSI TR-03183-2
+    asks of a creator."""
+    if not isinstance(agent, (spdx3.Person, spdx3.Organization)):
+        return False
+    for ext in _items(agent, "externalIdentifier"):
+        id_type = _local_name(getattr(ext, "externalIdentifierType", None))
+        value = str(getattr(ext, "identifier", "") or "").strip()
+        if id_type == "email" and "@" in value:
+            return True
+        if id_type in ("urlScheme", "other") and value.startswith(
+            ("http://", "https://")
+        ):
+            return True
+    return False
 
 
 def _has_hash(obj: object, algorithms: frozenset[str] | None) -> bool:
@@ -145,6 +198,17 @@ def _has_hash(obj: object, algorithms: frozenset[str] | None) -> bool:
         if algorithms is None or algorithm.strip().lower() in algorithms:
             return True
     return False
+
+
+def _endpoints(rel: spdx3.Relationship) -> tuple[str, list[str]]:
+    """The ``from`` id and the ``to`` ids of a relationship."""
+    from_ = getattr(rel, "from_", None)
+    from_id = from_ if isinstance(from_, str) else getattr(from_, "spdxId", "")
+    to_ids = [
+        t if isinstance(t, str) else getattr(t, "spdxId", "")
+        for t in getattr(rel, "to", None) or []
+    ]
+    return from_id or "", [t for t in to_ids if t]
 
 
 def _is_model_purpose(obj: spdx3.SHACLObject) -> bool:
@@ -214,7 +278,7 @@ def is_blank_license_expression(obj: object) -> bool:
     )
 
 
-class Spdx3Adapter(SbomAdapter):
+class Spdx3Adapter(SbomAdapter):  # pylint: disable=too-many-public-methods
     """Adapter for extracting data from SPDX 3.x documents."""
 
     def __init__(
@@ -412,55 +476,135 @@ class Spdx3Adapter(SbomAdapter):
     def has_components_of_kind(self, kind: str, reachable_ids: set[str] | None) -> bool:
         return bool(self._kind_objects(kind, reachable_ids))
 
+    def get_components_of_kind(
+        self, kind: str, reachable_ids: set[str]
+    ) -> list[tuple[str, str]]:
+        return [
+            (name, spdx_id)
+            for name, spdx_id, _ in self._kind_objects(kind, reachable_ids)
+        ]
+
+    def _linked(self, via: tuple[str, ...]) -> dict[str, list[Any]]:
+        """Elements each element links to through a ``via`` relationship (as
+        the ``from`` end), by the ``from`` element's id."""
+        linked: dict[str, list[Any]] = {}
+        for rel_type in via:
+            for from_id, to_ids in iter_relationships_by_type(
+                self.object_set, rel_type
+            ):
+                targets = (self.object_set.find_by_id(t) for t in to_ids)
+                linked.setdefault(from_id, []).extend(t for t in targets if t)
+        return linked
+
     def get_components_without_properties(
-        self, kind: str, properties: tuple[str, ...], reachable_ids: set[str]
+        self,
+        kind: str,
+        properties: tuple[str, ...],
+        reachable_ids: set[str],
+        via: tuple[str, ...] = (),
     ) -> list[tuple[str, str]]:
         objects = self._kind_objects(kind, reachable_ids)
         for prop in properties:
+            name = prop.partition("/")[0]
             # The system is whatever the SBOM describes, so it has no fixed class.
-            if kind in _KIND_TYPES and not hasattr(_KIND_TYPES[kind], prop):
-                raise ValueError(f"Unknown SPDX 3 property {prop!r} for kind {kind!r}")
+            if kind in _KIND_TYPES and not hasattr(_KIND_TYPES[kind], name):
+                raise ValueError(f"Unknown SPDX 3 property {name!r} for kind {kind!r}")
+        linked = self._linked(via)
         return [
             (name, spdx_id)
             for name, spdx_id, obj in objects
             if not any(
-                _property_present(obj, prop, self._resolves) for prop in properties
+                _property_present(holder, prop, self._resolves)
+                for holder in (obj, *linked.get(spdx_id, ()))
+                for prop in properties
             )
         ]
 
     def get_components_without_hash(
-        self, kind: str, algorithms: tuple[str, ...], reachable_ids: set[str]
+        self,
+        kind: str,
+        algorithms: tuple[str, ...],
+        reachable_ids: set[str],
+        via: tuple[str, ...] = (),
     ) -> list[tuple[str, str]]:
         wanted = frozenset(a.lower() for a in algorithms) if algorithms else None
+        linked = self._linked(via)
         return [
             (name, spdx_id)
             for name, spdx_id, obj in self._kind_objects(kind, reachable_ids)
-            if not _has_hash(obj, wanted)
+            if not any(
+                _has_hash(holder, wanted) for holder in (obj, *linked.get(spdx_id, ()))
+            )
         ]
 
-    def get_components_without_relationships(
+    def get_components_without_relationships(  # pylint: disable=too-many-arguments
         self,
         kind: str,
         relationships: tuple[str, ...],
         direction: str,
         reachable_ids: set[str],
+        *,
+        completeness: bool = False,
+        target_has: tuple[str, ...] = (),
     ) -> list[tuple[str, str]]:
         if direction not in ("from", "to"):
             raise ValueError(f"Unknown relationship direction {direction!r}")
         linked: set[str] = set()
-        for rel_type in relationships:
-            for from_id, to_ids in iter_relationships_by_type(
-                self.object_set, rel_type
-            ):
-                if direction == "to":
-                    linked.update(to_ids)
-                elif not all(self._is_blank_target(t) for t in to_ids):
-                    linked.add(from_id)
+        for rel in self.object_set.foreach_type(spdx3.Relationship):
+            if _local_name(getattr(rel, "relationshipType", None)) not in relationships:
+                continue
+            if completeness and not getattr(rel, "completeness", None):
+                continue
+            from_id, to_ids = _endpoints(rel)
+            if not from_id or not to_ids:
+                continue
+            if direction == "to":
+                linked.update(to_ids)
+            elif any(self._is_target(t, target_has) for t in to_ids):
+                linked.add(from_id)
         return [
             (name, spdx_id)
             for name, spdx_id, _ in self._kind_objects(kind, reachable_ids)
             if spdx_id not in linked
         ]
+
+    def _is_target(self, spdx_id: str, target_has: tuple[str, ...]) -> bool:
+        """Whether a relationship target says something and, with
+        ``target_has``, declares one of those properties."""
+        if self._is_blank_target(spdx_id):
+            return False
+        if not target_has:
+            return True
+        target = self.object_set.find_by_id(spdx_id)
+        return target is not None and any(
+            _property_present(target, prop, self._resolves) for prop in target_has
+        )
+
+    def get_components_without_contact(
+        self, kind: str, properties: tuple[str, ...], reachable_ids: set[str]
+    ) -> list[tuple[str, str]]:
+        return [
+            (name, spdx_id)
+            for name, spdx_id, obj in self._kind_objects(kind, reachable_ids)
+            if not any(
+                self._agent_has_contact(ref)
+                for prop in properties
+                for ref in _items(obj, prop)
+            )
+        ]
+
+    def document_has_contact(self, properties: tuple[str, ...]) -> bool:
+        info = getattr(self.spdx3_doc, "creationInfo", None)
+        return any(
+            self._agent_has_contact(ref)
+            for prop in properties
+            for ref in _items(info, prop)
+        )
+
+    def _agent_has_contact(self, ref: object) -> bool:
+        """Whether the agent ``ref`` names (an id or the agent) has a contact."""
+        agent = self.object_set.find_by_id(ref) if isinstance(ref, str) else ref
+        return _has_contact(agent)
 
     def _is_blank_target(self, spdx_id: str) -> bool:
         """Whether a relationship target says nothing (NOASSERTION)."""

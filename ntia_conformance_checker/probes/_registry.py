@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 class CheckerProtocol(Protocol):
     """Structural type for the probe-facing surface of a checker.
 
-    Probes only need these two accessors, so they type-hint against this
+    Probes only need these accessors, so they type-hint against this
     protocol rather than importing the concrete ``BaseChecker`` -- any
     object providing this shape satisfies it.
     """
@@ -57,25 +57,43 @@ class CheckerProtocol(Protocol):
         raise NotImplementedError
 
     def components_without_property(
-        self, kind: str, properties: tuple[str, ...]
+        self, kind: str, properties: tuple[str, ...], via: tuple[str, ...] = ()
     ) -> list[tuple[str, str]]:
-        """Components of ``kind`` declaring none of ``properties``."""
+        """Components of ``kind`` declaring none of ``properties`` (themselves or
+        on an element linked through ``via``)."""
         raise NotImplementedError
 
     def components_without_hash(
-        self, kind: str, algorithms: tuple[str, ...]
+        self, kind: str, algorithms: tuple[str, ...], via: tuple[str, ...] = ()
     ) -> list[tuple[str, str]]:
         """Components of ``kind`` with no hash (of one of ``algorithms``)."""
         raise NotImplementedError
 
-    def components_without_relationship(
-        self, kind: str, relationships: tuple[str, ...], direction: str
+    def components_without_relationship(  # pylint: disable=too-many-arguments
+        self,
+        kind: str,
+        relationships: tuple[str, ...],
+        direction: str,
+        completeness: bool = False,
+        target_has: tuple[str, ...] = (),
     ) -> list[tuple[str, str]]:
         """Components of ``kind`` in none of the ``relationships``."""
         raise NotImplementedError
 
+    def components_without_contact(
+        self, kind: str, properties: tuple[str, ...]
+    ) -> list[tuple[str, str]]:
+        """Components of ``kind`` whose agents in ``properties`` give no email
+        address or URL."""
+        raise NotImplementedError
+
     def document_declares(self, properties: tuple[str, ...]) -> bool:
         """True iff the SBOM document declares any of ``properties``."""
+        raise NotImplementedError
+
+    def document_has_contact(self, properties: tuple[str, ...]) -> bool:
+        """True iff an agent in the creation info's ``properties`` gives an
+        email address or URL."""
         raise NotImplementedError
 
 

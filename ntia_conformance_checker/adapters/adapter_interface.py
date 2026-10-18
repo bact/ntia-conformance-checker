@@ -31,7 +31,8 @@ def is_blank_string(value: object, noassertion: bool = False) -> bool:
     return not text or (noassertion and text == "NOASSERTION")
 
 
-class SbomAdapter(ABC):
+# One method per check keeps each adapter's answers independent.
+class SbomAdapter(ABC):  # pylint: disable=too-many-public-methods
     """Abstract base class defining the standard interface for all SBOM adapters."""
 
     @abstractmethod
@@ -176,29 +177,63 @@ class SbomAdapter(ABC):
         does (see the SPDX 3 adapter); ``None`` otherwise."""
         return None
 
-    def get_components_without_properties(
-        self, kind: str, properties: tuple[str, ...], reachable_ids: set[str]
+    def get_components_of_kind(  # pylint: disable=unused-argument
+        self, kind: str, reachable_ids: set[str]
     ) -> list[tuple[str, str]]:
-        """Components of ``kind`` that declare none of ``properties``."""
+        """``(name, spdx_id)`` of every reachable component of ``kind``."""
+        raise ValueError(f"{type(self).__name__} cannot check components of {kind!r}")
+
+    def get_components_without_properties(  # pylint: disable=unused-argument
+        self,
+        kind: str,
+        properties: tuple[str, ...],
+        reachable_ids: set[str],
+        via: tuple[str, ...] = (),
+    ) -> list[tuple[str, str]]:
+        """Components of ``kind`` that declare none of ``properties``, neither
+        themselves nor on an element they link to through a ``via``
+        relationship. A ``property/value`` entry needs that value."""
         raise ValueError(f"{type(self).__name__} cannot check components of {kind!r}")
 
     def get_components_without_hash(  # pylint: disable=unused-argument
-        self, kind: str, algorithms: tuple[str, ...], reachable_ids: set[str]
+        self,
+        kind: str,
+        algorithms: tuple[str, ...],
+        reachable_ids: set[str],
+        via: tuple[str, ...] = (),
     ) -> list[tuple[str, str]]:
         """Components of ``kind`` with no hash (of one of ``algorithms``, when
-        given)."""
+        given), neither themselves nor on an element linked through ``via``."""
         raise ValueError(f"{type(self).__name__} cannot check components of {kind!r}")
 
+    # pylint: disable-next=unused-argument,too-many-arguments
     def get_components_without_relationships(
         self,
         kind: str,
         relationships: tuple[str, ...],
         direction: str,
         reachable_ids: set[str],
+        *,
+        completeness: bool = False,
+        target_has: tuple[str, ...] = (),
     ) -> list[tuple[str, str]]:
-        """Components of ``kind`` that are in none of ``relationships``."""
+        """Components of ``kind`` that are in none of ``relationships``; with
+        ``completeness``, only a relationship declaring its completeness counts;
+        with ``target_has``, only one to a target declaring one of them."""
+        raise ValueError(f"{type(self).__name__} cannot check components of {kind!r}")
+
+    def get_components_without_contact(  # pylint: disable=unused-argument
+        self, kind: str, properties: tuple[str, ...], reachable_ids: set[str]
+    ) -> list[tuple[str, str]]:
+        """Components of ``kind`` whose agents in ``properties`` (such as
+        ``originatedBy``) give no email address or URL."""
         raise ValueError(f"{type(self).__name__} cannot check components of {kind!r}")
 
     def document_declares_any(self, properties: tuple[str, ...]) -> bool:
         """Whether the document or its creation info declares any of ``properties``."""
+        raise ValueError(f"{type(self).__name__} cannot check document properties")
+
+    def document_has_contact(self, properties: tuple[str, ...]) -> bool:
+        """Whether an agent in the creation info's ``properties`` (such as
+        ``createdBy``) gives an email address or URL."""
         raise ValueError(f"{type(self).__name__} cannot check document properties")
