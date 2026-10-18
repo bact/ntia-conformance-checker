@@ -8,9 +8,13 @@
 # Rule ids, labels and provisions follow the SBOM requirements ontology
 # https://bact.github.io/bom/req/cisa2026/; the SPDX 3.0.1 fields follow
 # https://bact.github.io/bom/mapping/cisa2026-to-spdx30.sssom.tsv.
-# An element whose SPDX 3.0.1 match is only close or broad, and every Practices
-# and Processes element (they describe how SBOMs are run, not what one holds),
-# is catalogue-only: listed, never checked.
+# An element whose SPDX 3.0.1 mapping is exact, or whose carrier the checker can
+# read directly, is checked. Where the mapping is only close or broad (format
+# name and generation context: close; hash: broad), the rule is checked as
+# "the carrier is present" and says so in cisa2026.md. An element with no
+# usable carrier (signature, tool version, SBOM version) and every Practices and
+# Processes element (how SBOMs are run, not what one holds) is catalogue-only:
+# listed, never checked.
 # Source: https://www.cisa.gov/sites/default/files/2026-07/2026_cisa_sbom_minimum_elements_508c.pdf
 
 spec:

@@ -120,6 +120,9 @@ def test_conformant_sbom_has_every_checkable_rule_present(tmp_path: Path) -> Non
     [
         (_creation_info("createdBy"), {"META-001"}),
         (_creation_info("createdUsing"), {"META-007"}),
+        (_creation_info("specVersion"), {"META-003", "META-004"}),
+        (_creation_info("created"), {"META-006"}),
+        (_drop("Lib", "name"), {"COMP-007"}),
         (_drop("SBOM1", "software_sbomType"), {"META-005"}),
         (_drop("Lib", "originatedBy"), {"COMP-001"}),
         (_drop("Lib", "verifiedUsing"), {"COMP-003", "COMP-004"}),
@@ -139,10 +142,15 @@ def test_removing_the_carrier_flips_only_its_rules(
     assert {got[P + f] for f in flipped} == {"missing"}
 
 
-def test_one_component_missing_a_value_fails_the_rule(tmp_path: Path) -> None:
-    """The rule is about every component: App has it, Lib lacks it."""
-    got = _edit(tmp_path, _drop("Lib", "software_packageUrl"))
-    assert got[P + "COMP-005"] == "missing"
+def _unlink_lib(graph: list[dict[str, Any]]) -> None:
+    graph.remove(_el(graph, "Rel-dep"))
+    _drop("Lib", "software_packageUrl")(graph)
+
+
+def test_a_package_unreachable_from_the_root_is_not_evaluated(tmp_path: Path) -> None:
+    """Documented limit: only packages reachable from the root are judged."""
+    got = _edit(tmp_path, _unlink_lib)
+    assert got[P + "COMP-005"] == "present"
 
 
 def test_spdx2_means_nothing_applies() -> None:
