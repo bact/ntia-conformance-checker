@@ -1,5 +1,5 @@
 {
- "_source": "https://bact.github.io/bom/ ntia2021 0.x / fsct2024 / g7ai2026 0.3.0 / cisa2026 (Data Field elements only; fetched 2026-10-18) (fetched 2026-10-16); regenerate when the ontology changes",
+ "_source": "https://bact.github.io/bom/ ntia2021 0.x / fsct2024 / g7ai2026 0.3.0 / cisa2026 (Data Field elements only; fetched 2026-10-18) (fetched 2026-10-16) / bsi2025 0.1.0 (modified 2026-10-16, fetched 2026-10-18); regenerate when the ontology changes",
  "ntia": {
   "BOM-NTIA2021-DF-001": {
    "provision": "requirement",
@@ -477,6 +477,88 @@
   },
   "BOM-CISA2026-COMP-008": {
    "provision": "requirement",
+   "aggregation": ""
+  }
+ },
+ "bsi": {
+  "BOM-BSI2025-COMP-001": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-002": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-003": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-004": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-005": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-006": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-007": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-008": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-009": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-010": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-011": {
+   "provision": "conditional-requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-012": {
+   "provision": "conditional-requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-013": {
+   "provision": "conditional-requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-014": {
+   "provision": "conditional-requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-015": {
+   "provision": "permission",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-016": {
+   "provision": "permission",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-COMP-017": {
+   "provision": "permission",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-DOC-001": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-DOC-002": {
+   "provision": "requirement",
+   "aggregation": ""
+  },
+  "BOM-BSI2025-DOC-003": {
+   "provision": "conditional-requirement",
    "aggregation": ""
   }
  }

@@ -528,6 +528,7 @@ def test_shipped_rules_have_filename_and_prose(spec_id: str) -> None:
         if spec_id not in {
             "g7ai",
             "cisa2026",
+            "bsi",
         }:  # scoped by probe params, not element ids
             assert rule.element_id, rule.slug
 

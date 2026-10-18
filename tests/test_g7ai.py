@@ -22,6 +22,7 @@ from ntia_conformance_checker import probes
 from ntia_conformance_checker.main import main
 from ntia_conformance_checker.registry import get_spec
 from ntia_conformance_checker.rule_based_checker import RuleBasedChecker
+from ntia_conformance_checker.spec import SpecRule
 
 DATA = Path(__file__).parent / "data"
 G7 = DATA / "spdx3" / "g7ai" / "conformant.json"
@@ -387,11 +388,24 @@ def test_cli_runs_g7ai(monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]) ->
 _ONTOLOGY = json.loads((DATA / "ontology_rules.json").read_text(encoding="utf-8"))
 
 
-@pytest.mark.parametrize("spec_id", ["ntia", "fsct3", "g7ai", "cisa2026"])
+# Conditional requirements that are not checked, so have no applies_when.
+_UNCHECKED_CONDITIONAL = {"bsi-doc-uri-missing"}
+
+
+def _ontology_provision(rule: SpecRule) -> str:
+    """The rule's provision in the ontology's terms: a requirement that
+    applies only where its element exists is a conditional requirement."""
+    conditional = rule.applies_when is not None or rule.slug in _UNCHECKED_CONDITIONAL
+    if rule.provision == "requirement" and conditional:
+        return "conditional-requirement"
+    return rule.provision
+
+
+@pytest.mark.parametrize("spec_id", ["ntia", "fsct3", "g7ai", "cisa2026", "bsi"])
 def test_rules_match_the_ontology_snapshot(spec_id: str) -> None:
     spec = get_spec(spec_id)
     mine = {
-        spec.rule_id(r): (r.provision, r.aggregation)
+        spec.rule_id(r): (_ontology_provision(r), r.aggregation)
         for r in spec.rules
         # The ontology gives CISA 2026 practices no rule id; the checker's own.
         if "-PP-" not in spec.rule_id(r)

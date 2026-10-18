@@ -11,8 +11,8 @@ SPDX-License-Identifier: Apache-2.0
   `registry.py` at import time;
   - dropping a new `<spec_id>.yaml` here is all that is needed to add
     a standard.
-- [`g7ai.md`](g7ai.md), [`cisa2026.md`](cisa2026.md) and
-  [`fsct3.md`](fsct3.md) list what those rules check.
+- [`g7ai.md`](g7ai.md), [`cisa2026.md`](cisa2026.md),
+  [`fsct3.md`](fsct3.md) and [`bsi.md`](bsi.md) list what those rules check.
 - Files prefixed with `_` (e.g. [`_example.yaml`](_example.yaml)) are skipped
   by the registry and not shipped.
 
@@ -25,7 +25,7 @@ an unknown probe, parameter, property, relationship type or vocabulary value.
 |---|---|
 | `require_component_attribute`, `require_document_attribute` | every component (the document) has the element (`attribute`) |
 | `require_property` | every component of `kind` declares one of `properties`; `name/value` asks for one value of a vocabulary property (`externalRef/vcs`, `externalIdentifier/cpe23`, `software_primaryPurpose/container`) |
-| `require_relationship` | every component of `kind` is the `from` (or, with `direction: to`, a target) of one of `relationships`; `completeness: true` counts only a relationship that declares its completeness, `target_has` only one to a target with one of those properties |
+| `require_relationship` | every component of `kind` is the `from` (or, with `direction: to`, a target) of one of `relationships`; `completeness: true` counts only a relationship that declares its completeness (whatever its targets), `target_has` only one to a target with one of those properties |
 | `require_hash` | every component of `kind` has a `Hash`, of one of `algorithms` when given |
 | `require_contact`, `require_document_contact` | an agent in `properties` (`originatedBy`, `suppliedBy`; `createdBy`) is a person or organization with an email address or a URL |
 | `require_document_property` | the document or its creation info declares one of `properties` |
