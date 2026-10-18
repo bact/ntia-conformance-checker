@@ -486,7 +486,10 @@ def test_shipped_rules_have_filename_and_prose(spec_id: str) -> None:
     assert (_RULES_DIR / f"{spec_id}.yaml").is_file()  # filename == spec id
     for rule in spec.rules:
         assert rule.competency_question and rule.warning, rule.slug
-        if spec_id != "g7ai":  # its rules are scoped by probe params, not element ids
+        if spec_id not in {
+            "g7ai",
+            "cisa2026",
+        }:  # scoped by probe params, not element ids
             assert rule.element_id, rule.slug
 
 

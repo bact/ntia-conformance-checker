@@ -373,10 +373,15 @@ def test_cli_runs_g7ai(monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]) ->
 _ONTOLOGY = json.loads((DATA / "ontology_rules.json").read_text(encoding="utf-8"))
 
 
-@pytest.mark.parametrize("spec_id", ["ntia", "fsct3", "g7ai"])
+@pytest.mark.parametrize("spec_id", ["ntia", "fsct3", "g7ai", "cisa2026"])
 def test_rules_match_the_ontology_snapshot(spec_id: str) -> None:
     spec = get_spec(spec_id)
-    mine = {spec.rule_id(r): (r.provision, r.aggregation) for r in spec.rules}
+    mine = {
+        spec.rule_id(r): (r.provision, r.aggregation)
+        for r in spec.rules
+        # The ontology gives CISA 2026 practices no rule id; the checker's own.
+        if "-PP-" not in spec.rule_id(r)
+    }
     onto = {
         k: (v["provision"], v["aggregation"]) for k, v in _ONTOLOGY[spec_id].items()
     }

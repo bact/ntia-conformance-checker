@@ -31,6 +31,8 @@ Currently, the supported specifications are:
 - [2024 CISA Framing Software Component Transparency (FSCT3) (minimum expected)][fsct3]
 - [G7 SBOM for AI: Minimum Elements][g7ai] (partial; SPDX 3 only, see
   [what is checked](ntia_conformance_checker/rules/g7ai.md))
+- [2026 CISA SBOM Minimum Elements][cisa2026] (partial; SPDX 3 only, see
+  [what is checked](ntia_conformance_checker/rules/cisa2026.md))
 - [2025 BSI TR-03183-2 v2.1.0 content requirements][bsi]
 
 The minimum elements include:
@@ -138,6 +140,7 @@ choices:
 
   Compliance standards (for --comply):
     bsi         BSI TR-03183-2 v2.1.0 content requirements
+    cisa2026    CISA 2026 Minimum Elements for a Software Bill of Materials (SBOM)
     fsct3       2024 CISA Framing Software Component Transparency (minimum expectation)
     fsct3-min   2024 CISA Framing Software Component Transparency (minimum expectation) (deprecated; use fsct3)
     g7ai        G7 2026 SBOM for AI Minimum Elements
@@ -287,6 +290,7 @@ Check out the [frequently asked questions](./FAQ.md) document.
 [ntia]: https://www.ntia.gov/report/2021/minimum-elements-software-bill-materials-sbom
 [ntia-spdx23]: https://spdx.github.io/spdx-spec/v2.3/how-to-use/#k22-mapping-ntia-minimum-elements-to-spdx-fields
 [fsct3]: https://www.cisa.gov/resources-tools/resources/framing-software-component-transparency-2024
+[cisa2026]: https://www.cisa.gov/sites/default/files/2026-07/2026_cisa_sbom_minimum_elements_508c.pdf
 [g7ai]: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/KI/SBOM-for-AI_minimum-elements.pdf
 [bsi]: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03183/BSI-TR-03183-2_v2_1_0.html
 [sbom-reqs]: https://drive.google.com/file/d/14HZGYD7pSSWEmtaHZzWrzPhxCXaCnloJ/view

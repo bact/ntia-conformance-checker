@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning][semver].
   (system, AI model, dataset), composite elements, and the outcome of each
   rule (`present`, `missing`, `not-applicable`, `out-of-scope`);
   see `rules/g7ai.md`
+- Partial support for the 2026 CISA Minimum Elements (`-c cisa2026`, SPDX 3
+  only): checks per the requirements ontology and its SPDX 3.0.1 mapping;
+  signature, tool version, SBOM version and the Practices and Processes
+  elements are catalogue-only; see `rules/cisa2026.md`
 - JSON output adds `ruleResults` and `clusterCompliance` for YAML-defined
   standards
 - G7 AI: when a project's root is not an AI package and exactly one model is
