@@ -57,9 +57,9 @@ and this project adheres to [Semantic Versioning][semver].
   elements are catalogue-only; see `rules/cisa2026.md`
 - JSON output adds `ruleResults` and `clusterCompliance` for YAML-defined
   standards
-- G7 AI: when a project's root is not an AI package and exactly one model is
-  reachable from it, the System-level property rules read that model;
-  `systemJudgedByModel` in the JSON report and the SARIF run properties
+- G7 AI: when the SBOM's only root is an AI model, the System-level property
+  rules read it as the system; `systemJudgedByModel` in the JSON report and
+  the SARIF run properties
 - `RuleBasedChecker`, `RuleResult` and `get_spec` are exported from the
   package; `RuleBasedChecker.rule_outcomes()` returns the outcome of every
   rule by id, sorted

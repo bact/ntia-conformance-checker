@@ -2,8 +2,8 @@
 # SPDX-FileType: SOURCE
 # SPDX-License-Identifier: Apache-2.0
 
-"""A project that ships one AI model and no system of its own is judged by the
-model for the System-level properties (G7 ``SLP``)."""
+"""An SBOM whose only root is an AI model is judged by that model for the
+System-level properties (G7 ``SLP``), and the JSON and SARIF reports say so."""
 
 # pylint: disable=missing-function-docstring
 
@@ -43,41 +43,51 @@ def _project_root(graph: Graph) -> None:
         del system[key]
 
 
-def _model_is_a_root_too(graph: Graph) -> None:
-    """The shape Pitloom writes: the project and its model are both roots."""
-    _project_root(graph)
-    _el(graph, "SBOM1")["rootElement"].append(B + "Model1")
+def _roots(*names: str) -> Callable[[Graph], None]:
+    def edit(graph: Graph) -> None:
+        _el(graph, "SBOM1")["rootElement"] = [B + n for n in names]
+
+    return edit
 
 
-def _ai_system_and_a_package(graph: Graph) -> None:
-    """A real AI system (an AI application) beside a plain package: the
-    application is the system, not the model."""
-    _el(graph, "SBOM1")["rootElement"].append(B + "Tool2")
+def _model_only(graph: Graph) -> None:
+    _roots("Model1")(graph)
 
 
-def _drop_model_prop(graph: Graph) -> None:
-    _project_root(graph)
+def _model_only_lacking_it(graph: Graph) -> None:
+    _model_only(graph)
     del _el(graph, "Model1")["ai_useSensitivePersonalInformation"]
 
 
-def _second_model(graph: Graph) -> None:
+def _model_is_a_root_too(graph: Graph) -> None:
+    """The shape Pitloom writes: the project and its model are both roots."""
     _project_root(graph)
+    _roots("System1", "Model1")(graph)
+
+
+def _two_models(graph: Graph) -> None:
     other = copy.deepcopy(_el(graph, "Model1"))
     other["spdxId"] = B + "Model2"
     other["name"] = "Second Model"
     graph.append(other)
-    _el(graph, "Rel-contains-model")["to"].append(B + "Model2")
+    _roots("Model1", "Model2")(graph)
 
 
-def _unreachable_model(graph: Graph) -> None:
+def _app_depends_on_model(graph: Graph) -> None:
+    """An ordinary application whose dependency is a model."""
     _project_root(graph)
-    _el(graph, "Rel-contains-model")["to"] = [B + "Tool2"]
-    # The model is still the dataset's trainer, but nothing leads to it.
-    _el(graph, "Rel-trainedOn")["from"] = B + "Model1"
+    _el(graph, "System1")["software_primaryPurpose"] = "application"
+    _el(graph, "Rel-contains-model")["relationshipType"] = "dependsOn"
+
+
+def _unset_purpose(graph: Graph) -> None:
+    """An AI package with no purpose is a model, as for the ai_model kind."""
+    _model_only(graph)
+    del _el(graph, "Model1")["software_primaryPurpose"]
 
 
 def _not_a_model(graph: Graph) -> None:
-    _project_root(graph)
+    _model_only(graph)
     _el(graph, "Model1")["software_primaryPurpose"] = "application"
 
 
@@ -97,21 +107,23 @@ _MODEL = ("Test AI Model", B + "Model1")
 @pytest.mark.parametrize(
     ("edit", "stand_in", "slp_007"),
     [
-        (lambda g: None, None, "present"),  # the root is an AI package
-        (_project_root, _MODEL, "present"),
-        (_model_is_a_root_too, _MODEL, "present"),
-        (_ai_system_and_a_package, None, "missing"),  # no stand-in: the roots stay
-        (_drop_model_prop, _MODEL, "missing"),  # the model's gap, not the root's
-        (_second_model, None, "missing"),  # which one is not for us to guess
-        (_unreachable_model, None, "missing"),
-        (_not_a_model, None, "missing"),  # an application is not a model
+        (lambda g: None, None, "present"),  # the root is an AI system
+        (_model_only, _MODEL, "present"),
+        (_model_only_lacking_it, _MODEL, "missing"),  # the model's gap
+        (_unset_purpose, _MODEL, "present"),
+        (_project_root, None, "missing"),  # a model below a plain root
+        (_model_is_a_root_too, None, "missing"),  # a plain root beside it
+        (_two_models, None, "present"),  # both roots are judged as the system
+        (_app_depends_on_model, None, "missing"),
+        (_not_a_model, None, "present"),  # an AI application is a system
     ],
     ids=[
-        "ai-root", "one-model", "model-also-a-root", "ai-system-and-package",
-        "model-lacks-it", "two-models", "unreachable", "app",
+        "ai-system-root", "model-only-root", "model-lacks-it", "unset-purpose",
+        "plain-root-model-below", "plain-and-model-roots", "two-models",
+        "app-depends-on-model", "ai-application-root",
     ],  # fmt: skip
 )
-def test_the_system_rules_read_the_model_only_when_it_is_the_one(
+def test_the_system_rules_read_a_model_only_when_it_is_the_only_root(
     tmp_path: Path,
     edit: Callable[[Graph], None],
     stand_in: tuple[str, str] | None,
@@ -130,15 +142,18 @@ def test_the_system_rules_read_the_model_only_when_it_is_the_one(
 
 
 def test_a_finding_names_the_model_it_judged(tmp_path: Path) -> None:
-    checker = _check(tmp_path, _drop_model_prop)
+    checker = _check(tmp_path, _model_only_lacking_it)
     (finding,) = checker.rule_results()[P + "SLP-007"].findings
     assert (finding.component_name, finding.component_id) == _MODEL
 
 
-def test_relationship_rules_still_read_the_root(tmp_path: Path) -> None:
-    """The root holds the model and its dependencies: SLP-002 is its."""
-    outcomes = _check(tmp_path, _project_root).rule_outcomes()
-    assert outcomes[P + "SLP-002"] == "present"
+def test_the_text_and_html_reports_do_not_say_so(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    checker = _check(tmp_path, _model_only)
+    checker.print_table_output(verbose=True)
+    text = capsys.readouterr().out + checker.output_html()
+    assert "judged" not in text.lower()
 
 
 def test_an_spdx2_sbom_has_no_stand_in() -> None:
@@ -150,7 +165,7 @@ def test_the_json_report_of_the_cli_carries_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     doc = json.loads(G7.read_text(encoding="utf-8"))
-    _project_root(doc["@graph"])
+    _model_only(doc["@graph"])
     path = tmp_path / "g7.json"
     path.write_text(json.dumps(doc), encoding="utf-8")
     monkeypatch.setattr(

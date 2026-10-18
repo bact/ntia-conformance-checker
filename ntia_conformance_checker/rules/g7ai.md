@@ -51,20 +51,17 @@ sub-elements are reported on their own but do not block.
 An element that is checked on its own evidence (`MDL-012`) is
 independent of its sub-elements.
 
-## A project that ships one model
+## An SBOM of one model
 
-System-level properties are AI package properties, but a project that ships a
-model and no system of its own has a plain software package as its root (often
-with the model listed as a root too). When a root is such a package, no root is
-an AI system (an AI package that is not a model) and exactly one model is
-reachable, the rules that read the system's properties read that model, and the JSON and SARIF
-reports name it (`systemJudgedByModel`; a finding names the model). The default
-text and HTML reports do not say so. With two models, none, or one that is not
-reachable, the root stays the system: the checker does not choose between
-models. The stand-in applies at any depth: an ordinary application whose only
-reachable model is a dependency has its system-level rules judged by that
-dependency. Rules about relationships (such as `SLP-002`) keep reading the root,
-which holds the model and its dependencies.
+System-level properties are AI package properties. When the SBOM's roots (an
+SBOM or BOM root expanded to its root elements) are exactly one package, and it
+is an AI package whose purpose is `model` or unset, the System-level rules read
+that model, and the JSON and SARIF reports say so: `systemJudgedByModel` in the
+JSON report and in the SARIF run properties. The text and HTML reports do not.
+Nothing else qualifies: a root that is a plain software package (even with a
+model reachable below it, or listed as a root beside it), two models, or any
+root that is not a model leave the roots as the system, so the System-level
+rules read the plain package and report its missing AI properties.
 
 ## What a check does not show
 

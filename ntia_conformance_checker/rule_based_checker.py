@@ -174,8 +174,8 @@ class RuleBasedChecker(BaseChecker):
         )
 
     def system_judged_by_model(self) -> tuple[str, str] | None:
-        """``(name, spdx_id)`` of the model the System-level rules read in place
-        of a root that is not an AI package, or ``None`` (see the adapter)."""
+        """``(name, spdx_id)`` of the model that is the SBOM's only root, so the
+        System-level rules read it, or ``None`` (see the adapter)."""
         return self.adapter.system_stand_in(self.reachable_component_ids)
 
     def components_without_property(

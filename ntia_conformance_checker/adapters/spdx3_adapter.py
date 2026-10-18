@@ -329,26 +329,13 @@ class Spdx3Adapter(SbomAdapter):
     # ---- Kind-scoped checks ------------------------------------------------
 
     def _kind_objects(
-        self,
-        kind: str,
-        reachable_ids: set[str] | None,
-        *,
-        judge_by_model: bool = False,
+        self, kind: str, reachable_ids: set[str] | None
     ) -> list[tuple[str, str, Any]]:
         """``(name, spdx_id, object)`` of ``kind`` (only the reachable ones unless
-        ``reachable_ids`` is ``None``), sorted by name and id. With
-        ``judge_by_model`` the system is the model that stands for it, when one
-        does (:meth:`_model_standing_for_system`)."""
+        ``reachable_ids`` is ``None``), sorted by name and id."""
         objects: list[Any]
         if kind == "system":
             objects = self._system_objects()
-            stand_in = (
-                self._model_standing_for_system(objects, reachable_ids)
-                if judge_by_model
-                else None
-            )
-            if stand_in is not None:
-                objects = [stand_in]
         elif kind in _KIND_TYPES:
             objects = list(self.object_set.foreach_type(_KIND_TYPES[kind]))
             if kind == "ai_model":
@@ -380,38 +367,26 @@ class Spdx3Adapter(SbomAdapter):
         unique = {o.spdxId: o for o in found if o is not None}
         return list(unique.values())
 
-    def _model_standing_for_system(
-        self, roots: list[Any], reachable_ids: set[str] | None
-    ) -> Any | None:
-        """The one model that is judged for the system, or ``None``.
+    @staticmethod
+    def _model_standing_for_system(roots: list[Any]) -> Any | None:
+        """The model the system is judged by, or ``None``.
 
-        A project that ships an AI model and no system of its own has a root
-        that is not an AI package (and may list the model as a root too), and
-        System-level properties are AI package properties. When a root is such a
-        package, no root is an AI system (an AI package that is not a model),
-        and exactly one model is reachable, the rules that read the system's
-        properties read that model. Two models, or none, leave the roots as the
-        system: which one to judge is not for the checker to guess. Relationship
-        rules keep reading the roots, which hold the model and its dependencies.
+        Only an SBOM whose roots (an SBOM element's roots expanded) are exactly
+        one package, an AI package that is a model (:func:`_is_model_purpose`),
+        is judged by that model: the System-level rules read it. A plain
+        software package among the roots (even with a model below it or beside
+        it), two models, or any other root leave the roots as the system.
         """
-        if reachable_ids is None:
+        if len(roots) != 1:
             return None
-        ai_roots = [r for r in roots if isinstance(r, spdx3.ai_AIPackage)]
-        if len(ai_roots) == len(roots) or any(
-            not _is_model_purpose(r) for r in ai_roots
-        ):
-            return None
-        models = [
-            o
-            for o in self.object_set.foreach_type(spdx3.ai_AIPackage)
-            if _is_model_purpose(o) and (o.spdxId or "") in reachable_ids
-        ]
-        return models[0] if len(models) == 1 else None
+        (root,) = roots
+        if isinstance(root, spdx3.ai_AIPackage) and _is_model_purpose(root):
+            return root
+        return None
 
     def system_stand_in(self, reachable_ids: set[str]) -> tuple[str, str] | None:
-        stand_in = self._model_standing_for_system(
-            self._system_objects(), reachable_ids
-        )
+        del reachable_ids  # the only root is reachable by definition
+        stand_in = self._model_standing_for_system(self._system_objects())
         if stand_in is None:
             return None
         return ((stand_in.name or "").strip(), (stand_in.spdxId or "").strip())
@@ -422,7 +397,7 @@ class Spdx3Adapter(SbomAdapter):
     def get_components_without_properties(
         self, kind: str, properties: tuple[str, ...], reachable_ids: set[str]
     ) -> list[tuple[str, str]]:
-        objects = self._kind_objects(kind, reachable_ids, judge_by_model=True)
+        objects = self._kind_objects(kind, reachable_ids)
         for prop in properties:
             # The system is whatever the SBOM describes, so it has no fixed class.
             if kind in _KIND_TYPES and not hasattr(_KIND_TYPES[kind], prop):
