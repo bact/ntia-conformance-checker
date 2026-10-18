@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Added
 
+- `pytest --real-world` runs the slow tests on real-world SBOMs, skipped by
+  default
 - GitHub releases attach the wheel, the sdist and the wheel's SPDX 3 SBOM,
   each with a Sigstore bundle and a build provenance attestation;
   see "Verify release files" in `SECURITY.md`

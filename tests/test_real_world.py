@@ -12,6 +12,8 @@ import pytest
 
 from ntia_conformance_checker import SbomChecker
 
+pytestmark = pytest.mark.real_world  # opt in with --real-world
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "real_world_sboms")
 
 

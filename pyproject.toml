@@ -175,3 +175,8 @@ ntia_conformance_checker = [
     "rules/_*.yaml", # e.g. rules/_example.yaml (template, not a real spec)
     "rules/README.md",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "real_world: slow tests on real-world SBOMs; run with --real-world",
+]
