@@ -26,6 +26,19 @@ SPDX3_RELATIONSHIP_TYPES: frozenset[str] = frozenset(
     spdx3.RelationshipType.NAMED_INDIVIDUALS
 )
 
+#: IRIs of the SPDX 3.0.1 individuals that stand for an element, such as
+#: ``NoneElement`` (a relationship to nothing) or ``NoAssertionLicense``. A
+#: document refers to them without defining them.
+SPDX3_INDIVIDUAL_ELEMENT_IRIS: frozenset[str] = frozenset(
+    iri
+    for cls in (
+        spdx3.IndividualElement,
+        spdx3.expandedlicensing_IndividualLicensingInfo,
+        spdx3.Organization,
+    )
+    for iri in cls.NAMED_INDIVIDUALS.values()
+)
+
 SPDX3_PACKAGE_DEPENDENCY_RELATIONSHIP_TYPES = (
     "contains",
     "dependsOn",

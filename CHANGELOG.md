@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning][semver].
   error, not a traceback; a failed report write exits 2; the HTML report
   escapes names, ids and errors; the SBOM type is read from any root that is
   an SBOM element
+- A relationship to an SPDX 3 individual such as `NoneElement` is no longer
+  reported as pointing to a missing element
 
 ### Added
 
