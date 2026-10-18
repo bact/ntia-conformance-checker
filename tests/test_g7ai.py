@@ -437,3 +437,25 @@ def test_rule_outcomes_sorted_and_exported() -> None:
     }
     assert isinstance(checker.rule_results()["BOM-G7AI2026-MD-001"], pkg.RuleResult)
     assert pkg.get_spec("g7ai").rules
+
+
+@pytest.mark.parametrize(
+    ("relationship", "outcome"),
+    [("descendantOf", "present"), ("ancestorOf", "missing")],
+)
+def test_model_lineage_is_a_descendant_of_relationship_from_the_model(
+    tmp_path: Path, relationship: str, outcome: str
+) -> None:
+    def add(graph: list[dict[str, Any]]) -> None:
+        graph.append(
+            {
+                "type": "Relationship",
+                "spdxId": B + "Rel-lineage",
+                "creationInfo": "_:g7ai-creationinfo",
+                "relationshipType": relationship,
+                "from": B + "Model1",
+                "to": [B + "Tool2"],
+            }
+        )
+
+    assert _outcomes(_check(tmp_path, add))[P + "MDL-006.3"] == outcome

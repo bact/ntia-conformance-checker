@@ -12,6 +12,7 @@ import logging
 import os
 import re
 import sys
+from html import escape
 from importlib.metadata import version
 from typing import TYPE_CHECKING, Any
 
@@ -333,6 +334,7 @@ def _emit_json(
             json.dump(data, outfile, indent=file_indent)
     except OSError as exc:
         logging.error("Could not write %s output file: %s", label, exc)
+        sys.exit(2)
 
 
 def print_output(
@@ -375,11 +377,12 @@ def print_output(
                             "<body>\n"
                             "<h1>SBOM Conformance Report</h1>\n"
                         )
-                        outfile.write(f"<p>Filename: {sbom.file}</p>\n")
+                        outfile.write(f"<p>Filename: {escape(str(sbom.file))}</p>\n")
                         outfile.write(html_output)
                         outfile.write("\n</body>\n</html>\n")
                 except OSError as exc:
                     logging.error("Could not write HTML output file: %s", exc)
+                    sys.exit(2)
             else:
                 print(html_output)
 

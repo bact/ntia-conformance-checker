@@ -505,8 +505,12 @@ class Spdx3Adapter(SbomAdapter):
 
         sbom_types: list[str] = []
 
-        # Assuming only one rootElement per document
-        root_elem = root_elements[0]
+        # The SBOM element may be any of the roots; report the first root when
+        # none is one.
+        root_elem = next(
+            (r for r in root_elements if isinstance(r, spdx3.software_Sbom)),
+            root_elements[0],
+        )
         if not isinstance(root_elem, spdx3.software_Sbom):
             doc_id = getattr(self.spdx3_doc, "spdxId", None)
             root_elem_id = getattr(root_elem, "spdxId", None)

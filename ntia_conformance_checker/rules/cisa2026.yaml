@@ -187,7 +187,7 @@ rules:
     spec_category: component-data
     element_description: "component identifiers"
     competency_question: "Component identifiers provided?"
-    warning: "Component identifiers is missing."
+    warning: "Component identifiers are missing."
     provision: requirement
     probe:
       name: require_property

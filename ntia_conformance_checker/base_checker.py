@@ -170,6 +170,11 @@ class BaseChecker(ABC):
         """Conformance messages from compliance/conformance checks."""
         return self._conformance_messages
 
+    def system_judged_by_model(self) -> tuple[str, str] | None:
+        """``(name, spdx_id)`` of the model that stands in for the system, or
+        ``None``. Only rule-based checkers judge a system by its model."""
+        return None
+
     @abstractmethod
     def check_compliance(self, maturity: int = 0) -> bool:
         """Abstract method to check compliance/conformance.

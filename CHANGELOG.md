@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+### Fixed
+
+- SPDX 3 content that parses as JSON but is not valid SPDX 3 is a parsing
+  error, not a traceback; a failed report write exits 2; the HTML report
+  escapes names, ids and errors; the SBOM type is read from any root that is
+  an SBOM element
+
 ### Added
 
 - FSCT 2024 (`-c fsct3`): the SPDX 3.0.1 mapping is checked against the rules

@@ -51,7 +51,11 @@ def _properties(rule: SpecRule) -> set[str]:
     if rule.probe is None:
         return set()
     params = rule.probe.params
-    props = params.get("properties") or [params.get("attribute")]
+    props = (
+        params.get("properties")
+        or params.get("relationships")
+        or [params.get("attribute")]
+    )
     return {
         _DOC_ATTRIBUTES.get(p, p.split("_", 1)[-1]) for p in props if isinstance(p, str)
     }

@@ -57,11 +57,13 @@ System-level properties are AI package properties, but a project that ships a
 model and no system of its own has a plain software package as its root (often
 with the model listed as a root too). When a root is such a package, no root is
 an AI system (an AI package that is not a model) and exactly one model is
-reachable, the rules that read the system's properties read that model, and the reports name
-it (`systemJudgedByModel` in the JSON report and in the SARIF run properties;
-a finding names the model). With two models, none, or one that is not
+reachable, the rules that read the system's properties read that model, and the JSON and SARIF
+reports name it (`systemJudgedByModel`; a finding names the model). The default
+text and HTML reports do not say so. With two models, none, or one that is not
 reachable, the root stays the system: the checker does not choose between
-models. Rules about relationships (such as `SLP-002`) keep reading the root,
+models. The stand-in applies at any depth: an ordinary application whose only
+reachable model is a dependency has its system-level rules judged by that
+dependency. Rules about relationships (such as `SLP-002`) keep reading the root,
 which holds the model and its dependencies.
 
 ## What a check does not show
@@ -196,3 +198,10 @@ property", and check the value before relying on the element.
 | `KPI-002` | Operational performance KPIs | requirement | not checked | `metric` (close) |  |
 
 [g7ai]: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/KI/SBOM-for-AI_minimum-elements.pdf
+
+## Beyond the mapping
+
+Two rules accept a relationship type the SPDX 3.0.1 mapping does not list for
+them: `system-components` also accepts `dependsOn` (the mapping has `contains`
+and `rootElement`), and `dataset-lifecycle-role` also accepts `testedOn` (the
+mapping has `trainedOn`). `tests/test_g7ai_mapping.py` pins these two.

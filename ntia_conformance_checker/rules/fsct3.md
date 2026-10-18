@@ -7,7 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 
 # FSCT 2024: what is checked
 
-`-c fsct3` checks an SPDX 3 or SPDX 2 SBOM against the baseline attributes of
+`-c fsct3` checks an SPDX 3 or SPDX 2 SBOM (the tables below are for SPDX 3;
+on SPDX 2 META-003, the SBOM type, is always missing, so an SPDX 2 SBOM cannot
+pass) against the baseline attributes of
 [Framing Software Component Transparency, third edition (2024)][fsct]
 (minimum expected level). Rule ids and provisions follow the
 [SBOM requirements ontology](https://bact.github.io/bom/req/fsct2024/); the SPDX
@@ -36,7 +38,8 @@ SPDX 3 is the exception: it looks at every package.
 
 ## Not checked (catalogue-only)
 
-Listed in the output, never counted as missing.
+Listed in the JSON and SARIF reports (as `out-of-scope`), never counted as
+missing. The default text and HTML reports do not mention them.
 
 | Rule | Element | Why |
 |---|---|---|

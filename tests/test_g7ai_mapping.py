@@ -51,7 +51,11 @@ def _properties(rule: SpecRule) -> set[str]:
     if rule.probe is None:
         return set()
     params = rule.probe.params
-    props = params.get("properties") or [params.get("attribute")]
+    props = (
+        params.get("properties")
+        or params.get("relationships")
+        or [params.get("attribute")]
+    )
     return {
         _DOC_ATTRIBUTES.get(p, p.split("_", 1)[-1]) for p in props if isinstance(p, str)
     }
@@ -64,6 +68,13 @@ def _mapped_names(rows: list[dict[str, str]]) -> set[str]:
     return names | paths
 
 
+#: Relationship types a rule accepts beyond its mapping rows, and why
+#: (stated in rules/g7ai.md, "Beyond the mapping").
+_BEYOND_MAPPING = {
+    "system-components": {"dependsOn"},  # a dependency is also a component
+    "dataset-lifecycle-role": {"testedOn"},  # the other lifecycle role of a dataset
+}
+
 RULES = get_spec("g7ai").rules
 ROWS = _load()
 
@@ -75,7 +86,7 @@ def test_rules_and_mapping_subjects_match() -> None:
 @pytest.mark.parametrize("rule", RULES, ids=_subject)
 def test_probe_properties_are_mapped(rule: SpecRule) -> None:
     mapped = _mapped_names(ROWS[_subject(rule)])
-    unmapped = _properties(rule) - mapped
+    unmapped = _properties(rule) - mapped - _BEYOND_MAPPING.get(_subject(rule), set())
     assert not unmapped, f"{_subject(rule)} reads {unmapped}, mapped: {mapped}"
 
 

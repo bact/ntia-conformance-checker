@@ -123,9 +123,11 @@ def get_validation_messages_html(
             if ctx:
                 html += "<p class='conformance-val-ctx-label'>Validation context:</p>\n"
                 html += "<ul class='conformance-val-ctx'>\n"
-                html += f"<li>SPDX ID: {_safe_attr(ctx, 'spdx_id')}</li>\n"
-                html += f"<li>Parent ID: {_safe_attr(ctx, 'parent_id')}</li>\n"
-                html += f"<li>Element type: {_safe_attr(ctx, 'element_type')}</li>\n"
+                html += f"<li>SPDX ID: {escape(str(_safe_attr(ctx, 'spdx_id')))}</li>\n"
+                html += (
+                    f"<li>Parent ID: {escape(str(_safe_attr(ctx, 'parent_id')))}</li>\n"
+                )
+                html += f"<li>Element type: {escape(str(_safe_attr(ctx, 'element_type')))}</li>\n"
                 html += "</ul>\n"
         html += "</li>\n"
     html += "</ul>"
@@ -338,8 +340,8 @@ def _generate_graph_html_report(rc: ReportContext) -> list[str]:
         for source, targets in rc.unknown_pointer_edges.items():
             for target in targets:
                 graph_issues_report.append(
-                    f"<li>Component '<b>{source}</b>' links to missing element "
-                    f"'<b>{target}</b>'</li>"
+                    f"<li>Component '<b>{escape(str(source))}</b>' links to missing "
+                    f"element '<b>{escape(str(target))}</b>'</li>"
                 )
         graph_issues_report.append("</ul>")
 
@@ -352,7 +354,7 @@ def _generate_graph_html_report(rc: ReportContext) -> list[str]:
         )
         graph_issues_report.append("<ul class='conformance-msg-list'>")
         for spdx_id in floating_ids[:10]:
-            graph_issues_report.append(f"<li>{spdx_id}</li>")
+            graph_issues_report.append(f"<li>{escape(str(spdx_id))}</li>")
         if len(floating_ids) > 10:
             graph_issues_report.append(
                 f"<li>... and {len(floating_ids) - 10} more items.</li>"
@@ -390,7 +392,7 @@ def report_html(
         )
         report.append("<ul class='conformance-err-list'>")
         for err in rc.parsing_errors:
-            report.append(f"<li>{err}</li>")
+            report.append(f"<li>{escape(str(err))}</li>")
         report.append("</ul>")
         report.append("</div>")
         return "\n".join(report)
@@ -429,7 +431,8 @@ def report_html(
         report.append("<ul class='conformance-mis-list'>")
         for info_name, components in rc.components_without_info:
             component_names = [
-                name if name not in (None, "") else id for name, id in components
+                escape(str(name if name not in (None, "") else id))
+                for name, id in components
             ]
             report.append(
                 f"<li>{info_name} ({len(components)}): "

@@ -46,7 +46,8 @@ ATTRIBUTES = {
     "name": "name",
     "version": "packageVersion",
     "supplier": "suppliedBy",
-    "unique_identifier": "packageUrl",
+    # On SPDX 3 the checker reads the spdxId (a close match), not the package URL.
+    "unique_identifier": "spdxId",
     "concluded_license": "hasConcludedLicense",
     "copyright_notice": "copyrightText",
 }
