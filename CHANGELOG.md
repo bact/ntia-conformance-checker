@@ -17,10 +17,12 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Fixed
 
+- A standard without System-level rules no longer reports `systemJudgedByModel`;
+  SARIF rule text and `conditional` say which rules are conditional or listed only
 - SPDX 3 content that parses as JSON but is not valid SPDX 3 (including an
-  abstract element type) is a parsing error, not a traceback; a failed report write exits 2; the HTML report
-  escapes names, ids and errors; the SBOM type is read from any root that is
-  an SBOM element
+  abstract element type) is a parsing error, not a traceback; a failed report
+  write exits 2; the HTML report escapes names, ids and errors; the SBOM type
+  is read from any root that is an SBOM element
 - A relationship to an SPDX 3 individual such as `NoneElement` is no longer
   reported as pointing to a missing element
 
@@ -83,7 +85,7 @@ and this project adheres to [Semantic Versioning][semver].
 - CISA 2026 COMP-003 and COMP-004 (hash value, algorithm) need a `Hash` with a
   non-blank algorithm and value; a package verification code no longer passes.
   New probe `require_hash` (optional `algorithms`)
-- SPDX 3 unique identifier (NTIA, FSCT 2024 COMP-004): a reachable package
+- BREAKING CHANGE: SPDX 3 unique identifier (NTIA, FSCT 2024 COMP-004): a reachable package
   needs a package URL, a content identifier or an external identifier of type
   packageUrl, cpe22, cpe23, swid, swhid or gitoid; the bare `spdxId` no longer
   counts. A `urlScheme` external identifier no longer counts for CISA 2026
@@ -109,17 +111,18 @@ and this project adheres to [Semantic Versioning][semver].
 - Unknown compliance ids (for example `fsct3x`) now raise
   `Unknown compliance standard` instead of falling back to FSCT 3
 
-### Removed
-
-- `BSIChecker`; use `SbomChecker(file, compliance="bsi", sbom_spec="spdx3")`
-- JSON output no longer has the deprecated `isNtiaConformant` key;
-  use `isConformant`
-
 ### Deprecated
 
 - `compliant` attribute; use `check_compliance()` (the same advice now applies
   to `ntia_minimum_elements_compliant`, deprecated since 5.0.0)
 - Compliance id `fsct3-min`; use `fsct3`
+
+### Removed
+
+- BREAKING CHANGE: `BSIChecker`; use
+  `SbomChecker(file, compliance="bsi", sbom_spec="spdx3")`
+- BREAKING CHANGE: JSON output no longer has the deprecated `isNtiaConformant`
+  key; use `isConformant`
 
 ## [6.0.0] - 2026-10-05
 

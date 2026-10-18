@@ -166,7 +166,7 @@ def _is_value_named(item: object, wanted: str) -> bool:
 
 def _has_contact(agent: object) -> bool:
     """Whether ``agent`` is a person or organization with an email address, or
-    a URL (an ``urlScheme`` or ``other`` external identifier), as BSI TR-03183-2
+    a URL (a ``urlScheme`` or ``other`` external identifier), as BSI TR-03183-2
     asks of a creator."""
     if not isinstance(agent, (spdx3.Person, spdx3.Organization)):
         return False

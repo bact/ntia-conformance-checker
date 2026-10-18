@@ -141,6 +141,20 @@ def _purposes(*values: str) -> Callable[[Graph], None]:
     return edit
 
 
+def _unnamed_file(graph: Graph) -> None:
+    _el(graph, "file-01").pop("name")
+
+
+def _supplier_only(graph: Graph) -> None:
+    pkg = _el(graph, "package-01")
+    pkg["suppliedBy"] = pkg.pop("originatedBy")[0]
+
+
+def _download_location_only(graph: Graph) -> None:
+    _el(graph, "file-01").pop("externalRef")
+    _el(graph, "package-01")["software_downloadLocation"] = "https://example.com/d"
+
+
 def _no_security_txt(graph: Graph) -> None:
     _el(graph, "package-01").pop("externalRef")
 
@@ -156,6 +170,9 @@ def _no_security_txt(graph: Graph) -> None:
         # archive is the archive property; it says nothing about structure
         (_purposes("archive"), "COMP-010", "missing", False),
         (_no_security_txt, "COMP-017", "missing", True),  # a permission
+        (_unnamed_file, "COMP-004", "missing", False),
+        (_supplier_only, "COMP-001", "missing", False),  # BSI: originator only
+        (_download_location_only, "COMP-012", "present", True),
     ],
     ids=[
         "vcs",
@@ -165,6 +182,9 @@ def _no_security_txt(graph: Graph) -> None:
         "firmware",
         "archive-only",
         "no-security-txt",
+        "unnamed-file",
+        "supplier-only",
+        "download-location",
     ],
 )
 def test_edits(
@@ -246,3 +266,26 @@ def test_report_does_not_call_a_permission_required(
     out = capsys.readouterr().out
     assert "SHA-512 hash of the deployable component (1)" in out
     assert "security.txt" not in out
+
+
+def test_sarif_says_what_each_kind_of_rule_checks(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Conditional and catalogue-only rules are not described as always checked."""
+    monkeypatch.setattr(sys, "argv", ["sbomcheck", "-c", "bsi", "-r", "sarif", str(OK)])
+    with pytest.raises(SystemExit):
+        main()
+    rules = {
+        r["id"].removeprefix(P): r
+        for r in json.loads(capsys.readouterr().out)["runs"][0]["tool"]["driver"][
+            "rules"
+        ]
+    }
+    text = {k: v["fullDescription"]["text"] for k, v in rules.items()}
+    assert "not-applicable" in text["COMP-011"]
+    assert "does not check it" in text["COMP-008"]
+    assert "result is emitted" in text["COMP-001"]
+    assert {k for k, v in rules.items() if v["properties"]["conditional"]} == {
+        f"COMP-0{n}" for n in range(11, 15)
+    }

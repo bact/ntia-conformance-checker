@@ -181,7 +181,13 @@ class RuleBasedChecker(BaseChecker):
 
     def system_judged_by_model(self) -> tuple[str, str] | None:
         """``(name, spdx_id)`` of the model that is the SBOM's only root, so the
-        System-level rules read it, or ``None`` (see the adapter)."""
+        System-level rules read it, or ``None`` (see the adapter, or when the
+        standard has no rule on the system)."""
+        if not any(
+            r.probe is not None and r.probe.params.get("kind") == "system"
+            for r in self._spec.active_rules()
+        ):
+            return None
         return self.adapter.system_stand_in(self.reachable_component_ids)
 
     def components_without_property(
@@ -531,6 +537,7 @@ class RuleBasedChecker(BaseChecker):
                     "category": rule.spec_category,
                     "outcome": results[self._spec.rule_id(rule)].outcome,
                     "provision": rule.provision,
+                    "conditional": rule.applies_when is not None,
                     "findings": [
                         {"id": f.component_id, "name": f.component_name, "note": f.note}
                         for f in results[self._spec.rule_id(rule)].findings

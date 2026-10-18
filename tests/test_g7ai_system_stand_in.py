@@ -175,3 +175,16 @@ def test_the_json_report_of_the_cli_carries_it(
         main()
     report = json.loads(capsys.readouterr().out)
     assert report["systemJudgedByModel"] == "Test AI Model"
+
+
+@pytest.mark.parametrize("standard", ["ntia", "fsct3", "cisa2026", "bsi"])
+def test_a_standard_without_system_rules_names_no_stand_in(
+    tmp_path: Path, standard: str
+) -> None:
+    doc = json.loads(G7.read_text(encoding="utf-8"))
+    _model_only(doc["@graph"])
+    path = tmp_path / "g7.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    checker = RuleBasedChecker(str(path), compliance=standard, sbom_spec="spdx3")
+    assert checker.system_judged_by_model() is None
+    assert checker.output_json()["systemJudgedByModel"] is None

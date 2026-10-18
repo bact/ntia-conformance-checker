@@ -379,6 +379,7 @@ def test_cli_runs_g7ai(monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]) ->
         "category": "metadata",
         "outcome": "present",
         "provision": "requirement",
+        "conditional": False,
         "findings": [],
     }
 

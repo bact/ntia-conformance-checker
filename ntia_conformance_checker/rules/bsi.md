@@ -15,8 +15,8 @@ fields follow its
 [SPDX 3.0.1 mapping](https://bact.github.io/bom/mapping/bsi2025-to-spdx30.sssom.tsv)
 and, where the mapping has no carrier, the SPDX 3.0.1 tables of the TR's own
 Appendix 8.2 (see "Beyond the mapping"). Outcomes are reported as for
-[`g7ai`](g7ai.md). SPDX 2 SBOMs are not covered: every rule is then
-`not-applicable`.
+[`g7ai`](g7ai.md). SPDX 2 SBOMs are not covered: every checked rule is
+then `not-applicable`.
 
 ## Provisions
 
@@ -54,7 +54,8 @@ one whose source code URI does not exist. Like every component rule, it is
 
 A component rule covers the packages (AI and dataset packages included)
 **reachable from the SBOM root**, the root included, following the composition
-and dependency relationships listed in [`cisa2026.md`](cisa2026.md). A
+and dependency relationships listed in [`cisa2026.md`](cisa2026.md), but not
+`trainedOn` or `testedOn` (CISA 2026, FSCT 2024 and G7 follow those). A
 distribution artifact is read for the package that links to it; it is not a
 component itself.
 

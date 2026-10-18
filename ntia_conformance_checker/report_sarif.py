@@ -222,6 +222,19 @@ def _sub_rule_kinds(parent: "SpecRule") -> tuple[str, str]:
 _MODAL = {"requirement": "must", "recommendation": "should", "permission": "may"}
 
 
+def _full_description(rule: "SpecRule", what: str) -> str:
+    """Say what the rule checks: catalogue-only rules check nothing."""
+    text = f"The SBOM {_MODAL[rule.provision]} provide {what}."
+    if rule.status == "catalogue-only":
+        return f"{text}  The checker lists this rule but does not check it."
+    if rule.applies_when is not None:
+        return (
+            f"{text}  Applies only to a component that has the element's "
+            "carrier; a component without it is not-applicable."
+        )
+    return f"{text}  A result is emitted for each component, or for the document, where this is absent."
+
+
 def _emit_rule(spec: "Spec", rule: "SpecRule") -> dict[str, Any]:
     """Build a SARIF ``reportingDescriptor`` for ``rule``."""
     rule_id = spec.rule_id(rule)
@@ -231,13 +244,7 @@ def _emit_rule(spec: "Spec", rule: "SpecRule") -> dict[str, Any]:
         "id": rule_id,
         "name": spec.report_name(rule),
         "shortDescription": {"text": short_text},
-        "fullDescription": {
-            "text": (
-                f"The SBOM {_MODAL[rule.provision]} provide {what}.  "
-                "A result is emitted for each component, or for the document, "
-                "where this is absent."
-            )
-        },
+        "fullDescription": {"text": _full_description(rule, what)},
         "defaultConfiguration": {"level": spec.severity(rule)},
         "helpUri": spec.rule_uri(rule),
         "relationships": _rule_relationships(spec, rule),
@@ -248,6 +255,7 @@ def _emit_rule(spec: "Spec", rule: "SpecRule") -> dict[str, Any]:
             "maturityLevel": rule.maturity,
             "maturity": spec.maturity_id(rule),
             "provision": rule.provision,
+            "conditional": rule.applies_when is not None,
             "status": rule.status,
             "specClauseNumber": rule.spec_clause_number,
             "specClauseName": rule.spec_clause_name,
