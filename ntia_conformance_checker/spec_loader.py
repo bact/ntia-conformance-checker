@@ -59,6 +59,7 @@ from .model import ELEMENT_IDS
 from .spdx3_utils import SPDX3_RELATIONSHIP_TYPES
 from .spec import (
     DEFAULT_MATURITY_LEVELS,
+    DEFAULT_REACH_VIA,
     Aggregation,
     ProbeRef,
     Provision,
@@ -141,7 +142,7 @@ def load_spec(path: str | Path) -> Spec:
         spec_block.pop("sbom_specs", []), yaml_path
     )
     spec_block["reach_via"] = _build_reach_via(
-        spec_block.pop("reach_via", []), yaml_path
+        spec_block.pop("reach_via", list(DEFAULT_REACH_VIA)), yaml_path
     )
     prefix = spec_block.get("rule_prefix", "")
     if not isinstance(prefix, str) or (
@@ -512,7 +513,7 @@ def _build_sbom_specs(raw: Any, path: Path) -> tuple[str, ...]:
 
 def _build_reach_via(raw: Any, path: Path) -> tuple[str, ...]:
     """Validate the spec's ``reach_via`` list of SPDX 3 relationship types
-    (omitted -> only the composition relationships are followed)."""
+    (omitted -> :data:`DEFAULT_REACH_VIA`)."""
     if not isinstance(raw, list) or not all(isinstance(v, str) for v in raw):
         raise SpecLoadError(
             f"{path}: spec reach_via must be a list of SPDX 3 relationship "

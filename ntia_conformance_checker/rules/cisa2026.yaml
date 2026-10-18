@@ -22,9 +22,6 @@ spec:
   rule_prefix: BOM-CISA2026
   title: CISA 2026 Minimum Elements for a Software Bill of Materials (SBOM)
   uri: https://www.cisa.gov/sites/default/files/2026-07/2026_cisa_sbom_minimum_elements_508c.pdf
-  # Besides composition, follow these from the root to find the components
-  # the rules judge: a dataset a reachable model was trained or tested on.
-  reach_via: [trainedOn, testedOn]
   sbom_specs: [spdx3]
   taxonomies:
     category: cisa2026-minimum-elements

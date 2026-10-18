@@ -37,8 +37,8 @@ included. On SPDX 3 the checker follows, from the `from` element to the `to`
 elements, the composition and dependency relationships (`contains`,
 `hasOptionalComponent`, `packagedBy`, `dependsOn`, `hasDynamicLink`,
 `hasStaticLink`, `hasPrerequisite`, `hasOptionalDependency`,
-`hasProvidedDependency`) and, as `reach_via` in `fsct3.yaml` declares,
-`trainedOn` and `testedOn`: a dataset that a reachable model was trained or
+`hasProvidedDependency`) and, as every standard's default `reach_via`
+declares, `trainedOn` and `testedOn`: a dataset that a reachable model was trained or
 tested on is judged like any other component. A package that is not reachable
 is not evaluated, except by COMP-004 on SPDX 2, which checks the SPDXID of every
 package.

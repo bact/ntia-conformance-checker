@@ -54,8 +54,8 @@ one whose source code URI does not exist. Like every component rule, it is
 
 A component rule covers the packages (AI and dataset packages included)
 **reachable from the SBOM root**, the root included, following the composition
-and dependency relationships listed in [`cisa2026.md`](cisa2026.md), but not
-`trainedOn` or `testedOn` (CISA 2026, FSCT 2024 and G7 follow those). A
+and dependency relationships, and `trainedOn` and `testedOn`, as listed in
+[`cisa2026.md`](cisa2026.md). A
 distribution artifact is read for the package that links to it; it is not a
 component itself.
 

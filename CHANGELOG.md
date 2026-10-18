@@ -76,6 +76,9 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Changed
 
+- BREAKING CHANGE: every standard follows `trainedOn` and `testedOn` to the
+  datasets a reachable model uses (spec `reach_via`, default both; `[]` opts
+  out), so NTIA and BSI now judge them too
 - BSI TR-03183-2 (`-c bsi`) is read from `rules/bsi.yaml` and run by
   `RuleBasedChecker`, with the ids and provisions of the requirements ontology
   and its SPDX 3.0.1 mapping; JSON and SARIF reports carry the rule results.

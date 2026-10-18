@@ -300,10 +300,20 @@ def test_a_dataset_reached_by_reach_via_is_judged(
         assert [f.component_id for f in got[P + rule].findings] == [B + "Data"]
 
 
-def test_cisa2026_and_fsct3_follow_trained_and_tested_on() -> None:
-    assert get_spec("cisa2026").reach_via == ("trainedOn", "testedOn")
-    assert get_spec("fsct3").reach_via == ("trainedOn", "testedOn")
-    assert not get_spec("ntia").reach_via and not get_spec("g7ai").reach_via
+@pytest.mark.parametrize("standard", ["ntia", "fsct3", "cisa2026", "bsi", "g7ai"])
+@pytest.mark.parametrize("link", ["trainedOn", "testedOn", None])
+def test_every_standard_follows_trained_and_tested_on(
+    tmp_path: Path, standard: str, link: str | None
+) -> None:
+    """The dataset is judged by every standard when a reachable model was
+    trained or tested on it, and only then."""
+    edit = add_model_and_dataset(
+        link, "software_packageVersion", "originatedBy", "verifiedUsing"
+    )
+    got = _results(tmp_path, edit, standard)
+    judged = any(f.component_id == B + "Data" for r in got.values() for f in r.findings)
+    assert judged is (link is not None)
+    assert get_spec(standard).reach_via == ("trainedOn", "testedOn")
 
 
 def test_spdx2_means_nothing_applies() -> None:

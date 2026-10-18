@@ -232,6 +232,22 @@ def test_loader_flat_spec_gets_default_level(tmp_path: Path) -> None:
     assert s.rule_id(s.rules[0]) == "SBOM-DEMO-C-001"
 
 
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    [
+        ("", ("trainedOn", "testedOn")),
+        ("  reach_via: []\n", ()),
+        ("  reach_via: [trainedOn]\n", ("trainedOn",)),
+    ],
+    ids=["default", "opt-out", "own-list"],
+)
+def test_reach_via_defaults_to_trained_and_tested_on(
+    tmp_path: Path, line: str, expected: tuple[str, ...]
+) -> None:
+    text = _GOOD.replace("  title: Demo\n", "  title: Demo\n" + line)
+    assert load_spec(_write(tmp_path, text)).reach_via == expected
+
+
 def test_element_concept_uris_defaults_empty_and_round_trips(tmp_path: Path) -> None:
     # Reserved semantic-mapping slot: empty by default, opaque when set.
     assert load_spec(_write(tmp_path, _GOOD)).rules[0].element_concept_uris == ()
