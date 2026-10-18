@@ -478,8 +478,8 @@ def test_sbomchecker_output_json() -> None:
     sbom = sbom_checker.SbomChecker(filepath)
     got = sbom.output_json()
     assert got["sbomName"] == "xyz-0.1.0"
-    assert not got["isNtiaConformant"]
-    assert not got["isConformant"]
+    assert "isNtiaConformant" not in got  # removed deprecated alias
+    assert got["isConformant"] is False
     assert not got["validationMessages"]
     assert got["authorNameProvided"]
     assert got["timestampProvided"]

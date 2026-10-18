@@ -481,7 +481,6 @@ def report_json(checker_instance: "BaseChecker", compliant: bool) -> dict[str, A
     """Build the JSON output dictionary; ``compliant`` is the verdict to report."""
     result: dict[str, Any] = {
         "isConformant": compliant,
-        "isNtiaConformant": compliant,  # backward compatibility
         "complianceStandard": getattr(checker_instance, "compliance_standard", ""),
         "sbomSpec": getattr(checker_instance, "sbom_spec", ""),
         "validationMessages": get_validation_messages_json(

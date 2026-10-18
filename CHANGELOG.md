@@ -84,6 +84,11 @@ and this project adheres to [Semantic Versioning][semver].
 - Unknown compliance ids (for example `fsct3x`) now raise
   `Unknown compliance standard` instead of falling back to FSCT 3
 
+### Removed
+
+- JSON output no longer has the deprecated `isNtiaConformant` key;
+  use `isConformant`
+
 ### Deprecated
 
 - `compliant` attribute; use `check_compliance()` (the same advice now applies
