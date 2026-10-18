@@ -136,7 +136,12 @@ or create separate environments for testing with different Python versions.
 ## CLI usage
 
 ```text
-usage: sbomcheck [OPTIONS] PATH
+usage: sbomcheck [-h] [-s {spdx2,spdx3}]
+                 [-c {bsi,cisa2026,fsct3,fsct3-min,g7ai,ntia}] [-m LEVEL] [-k]
+                 [-r TYPE] [-o PATH] [-v] [--debug] [-q] [-V]
+                 [PATH]
+
+Check if an SPDX SBOM complies with a compliance standard.
 
 positional arguments:
   PATH                  Filepath for SBOM input
@@ -144,18 +149,22 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -s, --sbom-spec {spdx2,spdx3}
-                        SBOM specification of the input file; see below for details [default: spdx2]
+                        SBOM specification of the input file; see below for
+                        details [default: spdx2]
   -c, --comply {bsi,cisa2026,fsct3,fsct3-min,g7ai,ntia}
-                        Compliance standards to check against; see below for details [default: ntia]
-  -m, --mature LEVEL    Maturity level to check against; 0 is the baseline
-                        and higher levels add requirements [default: 0]
+                        Compliance standards to check against; see below for
+                        details [default: ntia]
+  -m, --mature LEVEL    Maturity level to check against; 0 is the baseline and
+                        higher levels add requirements [default: 0]
   -k, --skip-validation
                         Skip validation
-  -r, --output TYPE     Report output type; see below for details [default: print]
+  -r, --output TYPE     Report output type; see below for details [default:
+                        print]
   -o, --output-file PATH
-                        Filepath for report output; if omitted, prints to console
-  -v, --verbose         Increase log verbosity to info
-  -vv, --debug          Increase log verbosity to debug
+                        Filepath for report output; if omitted, prints to
+                        console
+  -v, --verbose         Increase log verbosity: -v = info, -vv = debug
+  --debug               Set log verbosity to debug (same as -vv)
   -q, --quiet           Quiet logs: show errors only
   -V, --version         Display version of sbomcheck
 
@@ -229,11 +238,11 @@ use `check_compliance()` instead.
 
 ### Rules
 
-The NTIA and FSCT3 standards are defined declaratively in
-[`rules/ntia.yaml`](ntia_conformance_checker/rules/ntia.yaml) and
-[`rules/fsct3.yaml`](ntia_conformance_checker/rules/fsct3.yaml).
-Each rule carries the question shown in the report table and the message
-shown when the requirement is not met.
+Every standard is defined declaratively in a file of
+[`rules/`](ntia_conformance_checker/rules/): `ntia.yaml`, `fsct3.yaml`,
+`cisa2026.yaml`, `g7ai.yaml` and `bsi.yaml`. Each rule carries the question
+shown in the report table and the message shown when the requirement is not
+met.
 See [`rules/_example.yaml`](ntia_conformance_checker/rules/_example.yaml)
 for the format.
 
@@ -318,6 +327,5 @@ Check out the [frequently asked questions](./FAQ.md) document.
 [fsct3]: https://www.cisa.gov/resources-tools/resources/framing-software-component-transparency-2024
 [cisa2026]: https://www.cisa.gov/sites/default/files/2026-07/2026_cisa_sbom_minimum_elements_508c.pdf
 [g7ai]: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/KI/SBOM-for-AI_minimum-elements.pdf
-[bsi]: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03183/BSI-TR-03183-2_v2_1_0.html
 [sbom-reqs]: https://drive.google.com/file/d/14HZGYD7pSSWEmtaHZzWrzPhxCXaCnloJ/view
 [pypi]: https://pypi.org/project/ntia-conformance-checker/

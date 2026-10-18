@@ -14,8 +14,8 @@ specification strictly defines `binaryArtifact` as an `ExternalRefType`, so
 the file fails to parse ("Unknown property 'binaryArtifact'"). Define it inside
 an `externalRef` array instead.
 
-**Q: I am getting a "NotImplementedError: software_SoftwareArtifact is abstract
-and cannot be implemented" when parsing my SPDX 3 SBOM. How do I fix this?**
+**Q: The checker reports a parsing error "software_SoftwareArtifact is abstract
+and cannot be implemented" for my SPDX 3 SBOM. How do I fix this?**
 
 A: You are likely using `software_SoftwareArtifact` as the `"type"` for
 an element in your JSON-LD file (which is sometimes shown in BSI examples for

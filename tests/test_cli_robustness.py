@@ -52,13 +52,17 @@ def _graph_is_a_dict(doc: dict[str, Any]) -> None:
     doc["@graph"] = {}
 
 
+def _abstract_type(doc: dict[str, Any]) -> None:
+    doc["@graph"][6]["type"] = "software_SoftwareArtifact"
+
+
 def _tool_as_author(doc: dict[str, Any]) -> None:
     doc["@graph"][0]["createdBy"] = [B + "Tool1"]
 
 
 @pytest.mark.parametrize(
     "damage",
-    [_no_spdx_id, _unknown_type, _graph_is_a_dict, _tool_as_author],
+    [_no_spdx_id, _unknown_type, _graph_is_a_dict, _tool_as_author, _abstract_type],
     ids=lambda f: f.__name__.strip("_"),
 )
 def test_spdx3_content_that_parses_as_json_is_a_parsing_error(

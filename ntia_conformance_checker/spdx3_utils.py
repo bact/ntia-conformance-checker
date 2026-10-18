@@ -414,9 +414,17 @@ def parse_spdx3_file(file_path: str) -> tuple[spdx3.SHACLObjectSet | None, list[
     try:
         with open(file_path, "rb") as f:
             spdx3.JSONLDDeserializer().read(f, object_set)
-    except (OSError, ValueError, KeyError, TypeError, AttributeError) as err:
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        AttributeError,
+        NotImplementedError,
+    ) as err:
         # json.JSONDecodeError is a ValueError; content that parses as JSON but
-        # is not valid SPDX 3 raises the others.
+        # is not valid SPDX 3 raises the others (NotImplementedError: an abstract
+        # class used as an element type).
         logging.warning("SPDX3 deserialization failed: %s", err)
         parsing_errors.append(str(err))
         return None, parsing_errors
