@@ -83,7 +83,7 @@ def _rel(from_: str, rel_type: str, to: list[str], **props: Any) -> Edit:
                 "creationInfo": "_:ci",
                 "from": B + from_,
                 "relationshipType": rel_type,
-                "to": [t if ":" in t or t == "NoneElement" else B + t for t in to],
+                "to": [t if ":" in t or t.endswith("Element") else B + t for t in to],
                 **props,
             }
         )
@@ -312,6 +312,12 @@ FILENAME = ProbeRef(
             ),
             [],
         ),
+        # an unknown list, said so explicitly
+        (
+            DEPS,
+            _rel("p1", "dependsOn", ["NoAssertionElement"], completeness="noAssertion"),
+            ["p2"],
+        ),
         (DEPS, _rel("p1", "describes", ["p2"], completeness="complete"), ["p1", "p2"]),
         (FILENAME, _rel("p1", "hasDistributionArtifact", ["f1"]), ["p2"]),
         (
@@ -326,6 +332,7 @@ FILENAME = ProbeRef(
         "noassertion",
         "no-completeness",
         "none-element",
+        "noassertion-element",
         "other-type",
         "filename",
         "blank-filename",

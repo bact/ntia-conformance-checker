@@ -209,7 +209,8 @@ def require_relationship(  # pylint: disable=too-many-arguments
         direction: ``"from"`` if the component is the source of the
             relationship, ``"to"`` if it is a target.
         completeness: only a relationship that declares its ``completeness``
-            (complete, incomplete or noAssertion) counts.
+            (complete, incomplete or noAssertion) counts, whatever its targets:
+            a ``NoAssertionElement`` target says the list is unknown.
         target_has: SPDX 3 property names; only a relationship to a target
             declaring one of them counts (``direction`` ``"from"`` only).
     """

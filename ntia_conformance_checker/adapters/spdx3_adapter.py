@@ -560,7 +560,11 @@ class Spdx3Adapter(SbomAdapter):  # pylint: disable=too-many-public-methods
                 continue
             if direction == "to":
                 linked.update(to_ids)
-            elif any(self._is_target(t, target_has) for t in to_ids):
+            elif (completeness and not target_has) or any(
+                self._is_target(t, target_has) for t in to_ids
+            ):
+                # A declared completeness says enough on its own, even of a
+                # list that is unknown (NoAssertionElement, noAssertion).
                 linked.add(from_id)
         return [
             (name, spdx_id)
