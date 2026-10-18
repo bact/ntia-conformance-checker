@@ -248,6 +248,11 @@ def test_reach_via_defaults_to_trained_and_tested_on(
     assert load_spec(_write(tmp_path, text)).reach_via == expected
 
 
+def test_a_spec_built_in_python_follows_trained_and_tested_on_too() -> None:
+    field = next(f for f in dataclasses.fields(Spec) if f.name == "reach_via")
+    assert field.default == ("trainedOn", "testedOn")
+
+
 def test_element_concept_uris_defaults_empty_and_round_trips(tmp_path: Path) -> None:
     # Reserved semantic-mapping slot: empty by default, opaque when set.
     assert load_spec(_write(tmp_path, _GOOD)).rules[0].element_concept_uris == ()

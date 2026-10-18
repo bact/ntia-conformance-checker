@@ -229,10 +229,13 @@ def _full_description(rule: "SpecRule", what: str) -> str:
         return f"{text}  The checker lists this rule but does not check it."
     if rule.applies_when is not None:
         return (
-            f"{text}  Applies only to a component that has the element's "
-            "carrier; a component without it is not-applicable."
+            f"{text}  Applies only where the standard's condition holds (the "
+            "element is given); elsewhere it is not-applicable."
         )
-    return f"{text}  A result is emitted for each component, or for the document, where this is absent."
+    return (
+        f"{text}  A result is emitted for each component, or for the document, "
+        "where this is absent."
+    )
 
 
 def _emit_rule(spec: "Spec", rule: "SpecRule") -> dict[str, Any]:

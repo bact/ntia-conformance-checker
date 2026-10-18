@@ -15,17 +15,6 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
-### Fixed
-
-- A standard without System-level rules no longer reports `systemJudgedByModel`;
-  SARIF rule text and `conditional` say which rules are conditional or listed only
-- SPDX 3 content that parses as JSON but is not valid SPDX 3 (including an
-  abstract element type) is a parsing error, not a traceback; a failed report
-  write exits 2; the HTML report escapes names, ids and errors; the SBOM type
-  is read from any root that is an SBOM element
-- A relationship to an SPDX 3 individual such as `NoneElement` is no longer
-  reported as pointing to a missing element
-
 ### Added
 
 - FSCT 2024 (`-c fsct3`): the SPDX 3.0.1 mapping is checked against the rules
@@ -78,7 +67,8 @@ and this project adheres to [Semantic Versioning][semver].
 
 - BREAKING CHANGE: every standard follows `trainedOn` and `testedOn` to the
   datasets a reachable model uses (spec `reach_via`, default both; `[]` opts
-  out), so NTIA and BSI now judge them too
+  out), so NTIA and BSI now judge them too, and a `trainedOn` or `testedOn` to
+  a missing element is reported as an unknown pointer for them as well
 - BSI TR-03183-2 (`-c bsi`) is read from `rules/bsi.yaml` and run by
   `RuleBasedChecker`, with the ids and provisions of the requirements ontology
   and its SPDX 3.0.1 mapping; JSON and SARIF reports carry the rule results.
@@ -88,14 +78,13 @@ and this project adheres to [Semantic Versioning][semver].
 - CISA 2026 COMP-003 and COMP-004 (hash value, algorithm) need a `Hash` with a
   non-blank algorithm and value; a package verification code no longer passes.
   New probe `require_hash` (optional `algorithms`)
-- BREAKING CHANGE: SPDX 3 unique identifier (NTIA, FSCT 2024 COMP-004): a reachable package
-  needs a package URL, a content identifier or an external identifier of type
+- BREAKING CHANGE: SPDX 3 unique identifier (NTIA, FSCT 2024 COMP-004): a
+  reachable package needs a package URL, a content identifier or an external identifier of type
   packageUrl, cpe22, cpe23, swid, swhid or gitoid; the bare `spdxId` no longer
   counts. A `urlScheme` external identifier no longer counts for CISA 2026
   COMP-005 or G7 AI MDL-002 and DP-004
-- CISA 2026 and FSCT 2024 also follow `trainedOn` and `testedOn` from the root
-  (the spec's new `reach_via` list), so the component rules judge a dataset a
-  reachable model was trained or tested on
+- SARIF rule text says when a rule is conditional or only listed, and JSON
+  `ruleResults` and SARIF rule properties carry `conditional`
 - Every rule of YAML-defined standards reports "The SBOM could not be parsed."
   for an SBOM that could not be parsed (JSON `findings[].note`)
 - Pull request and release builds embed the SBOM with Pitloom 0.20.1 and fail
@@ -126,6 +115,16 @@ and this project adheres to [Semantic Versioning][semver].
   `SbomChecker(file, compliance="bsi", sbom_spec="spdx3")`
 - BREAKING CHANGE: JSON output no longer has the deprecated `isNtiaConformant`
   key; use `isConformant`
+
+### Fixed
+
+- A standard without System-level rules no longer reports `systemJudgedByModel`
+- SPDX 3 content that parses as JSON but is not valid SPDX 3 (including an
+  abstract element type) is a parsing error, not a traceback; a failed report
+  write exits 2; the HTML report escapes names, ids and errors; the SBOM type
+  is read from any root that is an SBOM element
+- A relationship to an SPDX 3 individual such as `NoneElement` is no longer
+  reported as pointing to a missing element
 
 ## [6.0.0] - 2026-10-05
 
