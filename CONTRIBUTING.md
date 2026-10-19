@@ -152,8 +152,8 @@ Here's the process to make changes to the codebase:
    [pyrefly]: https://pyrefly.org/
    [pyright]: https://github.com/microsoft/pyright
 
-9. Format your changes with [`black`][black] and sort import with
-    [`isort`][isort]:
+8. Format your changes with [`black`][black] and sort imports with
+   [`ruff`][ruff]:
 
    ```sh
    make format
@@ -162,31 +162,31 @@ Here's the process to make changes to the codebase:
    On Windows, `make` is not available. Run the formatters directly instead:
 
    ```powershell
-   black ntia_conformance_checker/
-   isort ntia_conformance_checker/
+   black ntia_conformance_checker/ tests/
+   ruff check --fix --select I ntia_conformance_checker/ tests/
    ```
 
    [black]: https://github.com/psf/black
-   [isort]: https://pycqa.github.io/isort/
+   [ruff]: https://docs.astral.sh/ruff/
 
-10. Push the branch to your fork on GitHub:
+9. Push the branch to your fork on GitHub:
 
    ```sh
    git push origin fix-or-improve-something
    ```
 
-11. Make a pull request on GitHub.
-12. Continue making more changes and commits on the branch,
+10. Make a pull request on GitHub.
+11. Continue making more changes and commits on the branch,
     with `git commit --signoff` and `git push`.
-13. When done, write a comment on the PR asking for a code review.
-14. Some other developer will review your changes and accept your PR.
+12. When done, write a comment on the PR asking for a code review.
+13. Some other developer will review your changes and accept your PR.
     The merge should be done with `rebase`, if possible, or with `squash`.
-15. The temporary branch on GitHub should be deleted (there is a button for
+14. The temporary branch on GitHub should be deleted (there is a button for
     deleting it).
-16. Delete the local branch as well:
+15. Delete the local branch as well:
 
     ```sh
-    git checkout master
+    git checkout main
     git pull -p
     git branch -a
     git branch -d fix-or-improve-something
@@ -208,6 +208,9 @@ Run tests and show verbose output:
 ```sh
 pytest -vvs
 ```
+
+The slow tests on real-world SBOMs are skipped by default; run them with
+`pytest --real-world`, for example before a release.
 
 Run tests with coverage report and show line numbers of missed lines:
 

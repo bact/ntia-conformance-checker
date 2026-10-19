@@ -27,10 +27,11 @@ A web-based version of the tool is available (no installation needed) at:
 
 `sbomcheck` exits with 0 when the SBOM conforms. It exits with 1 when the SBOM
 does not conform, and also when the file cannot be read or parsed (the report
-then says so: every rule is `missing` and `executionSuccessful` is false in the
-SARIF). It exits with 2 for a usage error, an undeclared maturity level, or a
-report file that could not be written. When the SPDX version of the file cannot
-be determined, no SARIF file is written.
+then says so: every checked rule is `missing`, or `not-applicable` when the
+standard does not cover the SBOM specification, and `executionSuccessful` is
+false in the SARIF). It exits with 2 for a usage error, an undeclared maturity
+level, or a report file that could not be written. When the SPDX version of the
+file cannot be determined, no SARIF file is written.
 
 ## Conformance
 
@@ -264,13 +265,15 @@ Go to this page: <https://tools.spdx.org/app/ntia_checker/>.
 
 ## HTML output
 
-The HTML output is organized into four distinct div blocks,
+The HTML output is organized into distinct div blocks,
 each with a specific CSS class for easy styling and targeting:
 
 - Errors (parsing, etc.): `<div class="conformance-err">`
 - Conformance results: `<div class="conformance-res">`
 - Components missing required information: `<div class="conformance-mis">`
 - Detailed validation information: `<div class="conformance-val">`
+- Conformance issues (for example an SPDX 3 root that is not an SBOM element):
+  `<div class="conformance-msg">`
 - Graph structural issues: `<div class="conformance-graph">`
 
 ## History

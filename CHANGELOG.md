@@ -66,8 +66,8 @@ and this project adheres to [Semantic Versioning][semver].
 ### Changed
 
 - BREAKING CHANGE: every standard follows `trainedOn` and `testedOn` to the
-  datasets a reachable model uses (spec `reach_via`, default both; `[]` opts
-  out), so NTIA and BSI now judge them too, and a `trainedOn` or `testedOn` to
+  datasets a reachable model uses (spec `reach_via`, default both; `[]` adds
+  none), so NTIA and BSI now judge them too, and a `trainedOn` or `testedOn` to
   a missing element is reported as an unknown pointer for them as well
 - BSI TR-03183-2 (`-c bsi`) is read from `rules/bsi.yaml` and run by
   `RuleBasedChecker`, with the ids and provisions of the requirements ontology
@@ -77,12 +77,13 @@ and this project adheres to [Semantic Versioning][semver].
   `rules/bsi.md`
 - CISA 2026 COMP-003 and COMP-004 (hash value, algorithm) need a `Hash` with a
   non-blank algorithm and value; a package verification code no longer passes.
-  New probe `require_hash` (optional `algorithms`)
+  New probe `require_hash` (optional `algorithms`; BSI COMP-007 asks for
+  SHA-512)
 - BREAKING CHANGE: SPDX 3 unique identifier (NTIA, FSCT 2024 COMP-004): a
   reachable package needs a package URL, a content identifier or an external
   identifier of type packageUrl, cpe22, cpe23, swid, swhid or gitoid; the bare
-  `spdxId` no longer counts. A `urlScheme` external identifier no longer counts for CISA 2026
-  COMP-005 or G7 AI MDL-002 and DP-004
+  `spdxId` no longer counts. A `urlScheme` external identifier no longer
+  counts for CISA 2026 COMP-005 or G7 AI MDL-002 and DP-004
 - SARIF rule text says when a rule is conditional or only listed, and JSON
   `ruleResults` and SARIF rule properties carry `conditional`
 - Every rule of YAML-defined standards reports "The SBOM could not be parsed."

@@ -37,7 +37,7 @@ Each rule has one of four outcomes (`ruleResults` in the JSON output):
 
 | Kind | What it is |
 |---|---|
-| `system` | Each root package the SBOM describes (an SBOM root expands to its root elements). No such package, or a non-package root: the rule fails. System-level properties are AI package properties, so the system must be an AI package. An SBOM or BOM root expands to its root elements. A model or dataset not reachable from the root is ignored when another of its kind is reachable; reachable means linked by `contains`, `dependsOn` or the like, or as the dataset a model was `trainedOn` or `testedOn`. |
+| `system` | Each root package the SBOM describes (an SBOM root expands to its root elements). No such package, or a non-package root: the rule fails. System-level properties are AI package properties, so the system must be an AI package. A model or dataset not reachable from the root is ignored when another of its kind is reachable; reachable means linked by `contains`, `dependsOn` or the like, or as the dataset a model was `trainedOn` or `testedOn`. |
 | `ai_model` | An AI package whose purpose is `model` or unset. |
 | `dataset` | A dataset package. |
 
