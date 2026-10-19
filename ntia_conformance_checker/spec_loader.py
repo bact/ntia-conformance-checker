@@ -13,6 +13,9 @@ the schema:
     spec:
         id: ntia                                 # machine id; uppercased -> SPEC segment
         title: 2021 NTIA SBOM Minimum Elements
+        rule_prefix: BOM-NTIA2021                # optional; default SBOM-<ID>
+        sbom_specs: [spdx3]                      # optional; default any
+        reach_via: [trainedOn, testedOn]         # optional (the default)
         uri: https://...
         taxonomies:                              # output-format-agnostic names
             category: ntia-minimum-elements
@@ -29,7 +32,7 @@ the schema:
           id: required
           title: Required
 
-    rules:                                       # id SBOM-NTIA-DF-001 is derived
+    rules:                                       # id BOM-NTIA2021-DF-001 is derived
         - number: 1
           slug: ntia-component-supplier-missing   # finding-framed; report_name derived
           spec_category: data-fields

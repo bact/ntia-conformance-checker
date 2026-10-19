@@ -45,8 +45,8 @@ class BaseChecker(ABC):
     This base class contains methods for common tasks like file parsing
     and information extractions from the SBOM.
 
-    Any class inheriting from BaseChecker must implement its abstract methods,
-    such as `check_compliance` and `output_json`.
+    Any class inheriting from BaseChecker must implement its abstract
+    method `check_compliance`.
     """
 
     # Minimum elements/baseline attributes required by a compliance standard
@@ -72,7 +72,7 @@ class BaseChecker(ABC):
         ),
     }
 
-    compliance_standard: str = ""  # fsct3-min, ntia
+    compliance_standard: str = ""  # spec id, e.g. ntia, fsct3, bsi
     sbom_spec: str = ""  # spdx2, spdx3
 
     # These are detectable by spdx-tools, so not needed for now.

@@ -272,7 +272,7 @@ def require_contact(
     """Require every component of ``kind`` to name an agent with a contact.
 
     A contact is an email address, or a URL, given as an external identifier
-    of a person or organization (BSI TR-03183-2, Table 9).
+    of a person or organization (BSI TR-03183-2).
 
     Args:
         checker: the running checker instance.

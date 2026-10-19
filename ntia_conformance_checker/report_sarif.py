@@ -45,7 +45,7 @@ TOOL_URI = "https://github.com/spdx/ntia-conformance-checker"
 # Fallback MIME type when nothing more specific applies.
 _DEFAULT_MIME_TYPE = "application/octet-stream"
 
-# Extension-to-MIME mapping for non-ambiguous SBOM serialisation formats.
+# Extension-to-MIME mapping for non-ambiguous SBOM serialization formats.
 # Each entry is (tuple-of-suffixes, mime-type); checked in order so that
 # double-extensions like ".rdf.xml" are tested before the shorter ".xml".
 _SBOM_EXT_MIME: tuple[tuple[tuple[str, ...], str], ...] = (
@@ -106,7 +106,7 @@ def _sbom_mime_type(path: str, sbom_spec: str = "") -> str:
 def _artifact_contents(path: str) -> dict[str, Any] | None:
     """Read ``path`` and return a SARIF ``artifact.contents`` object.
 
-    Tries UTF-8 first (every SPDX serialisation in active use today is text).
+    Tries UTF-8 first (every SPDX serialization in active use today is text).
     Falls back to base64 binary for anything that does not decode cleanly so
     the embed flag still works for unusual inputs.  Returns ``None`` if the
     file cannot be opened.

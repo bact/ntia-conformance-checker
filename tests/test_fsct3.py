@@ -2,7 +2,7 @@
 # SPDX-FileType: SOURCE
 # SPDX-License-Identifier: Apache-2.0
 
-"""Behaviour of the fsct3 rules on SPDX 3: what flips a rule, and the limits."""
+"""Behavior of the fsct3 rules on SPDX 3: what flips a rule, and the limits."""
 
 # pylint: disable=missing-function-docstring
 

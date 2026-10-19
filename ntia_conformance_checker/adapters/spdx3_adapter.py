@@ -36,7 +36,8 @@ _BLANK_INDIVIDUALS: frozenset[str] = frozenset(
 )
 
 
-# Component kind (see model.COMPONENT_KINDS) -> SPDX 3 class; "system" is the root package.
+# Component kind (see model.COMPONENT_KINDS) -> SPDX 3 class; "system" is whatever
+# the SBOM describes, so it has no class.
 _KIND_TYPES: dict[str, type[spdx3.SHACLObject]] = {
     "component": spdx3.software_Package,
     "ai_model": spdx3.ai_AIPackage,
@@ -434,7 +435,8 @@ class Spdx3Adapter(SbomAdapter):  # pylint: disable=too-many-public-methods
         )
 
     def _system_objects(self) -> list[Any]:
-        """The SBOM's root packages: what the SBOM describes."""
+        """The SBOM's root elements (an SBOM or BOM root expanded to its own roots):
+        what the SBOM describes."""
         found: list[Any] = []
         for root in getattr(self.spdx3_doc, "rootElement", []) or []:
             elem = self.object_set.find_by_id(root) if isinstance(root, str) else root

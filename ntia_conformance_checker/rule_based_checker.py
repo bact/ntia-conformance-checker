@@ -181,8 +181,8 @@ class RuleBasedChecker(BaseChecker):
 
     def system_judged_by_model(self) -> tuple[str, str] | None:
         """``(name, spdx_id)`` of the model that is the SBOM's only root, so the
-        System-level rules read it, or ``None`` (see the adapter, or when the
-        standard has no rule on the system)."""
+        System-level rules read it, or ``None`` (the roots are not exactly one
+        model, or the standard has no System-level rule; see the adapter)."""
         if not any(
             r.probe is not None and r.probe.params.get("kind") == "system"
             for r in self._spec.active_rules()

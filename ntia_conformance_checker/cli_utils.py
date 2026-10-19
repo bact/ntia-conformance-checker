@@ -182,7 +182,7 @@ def get_parsed_args() -> argparse.Namespace:
 
     args = parser.parse_args()
 
-    # Normalise the report output type: map undocumented aliases and validate.
+    # Normalize the report output type: map undocumented aliases and validate.
     if args.output in _OUTPUT_ALIASES:
         args.output = _OUTPUT_ALIASES[args.output]
     if args.output not in _OUTPUT_CHOICES:

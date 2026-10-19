@@ -22,9 +22,10 @@ output format (text table, JSON, SARIF, future OSCAL):
   standard id/title, general help URL (used as a fallback when a rule has
   no rule-specific URL), the categories and rules, and the taxonomy names.
 
-Rule identifiers follow the ``SBOM-[SPEC]-[CATEGORY]-[NNN]`` convention
-documented in ``RULES.md``.  ``SPEC`` is the uppercased :attr:`Spec.id`
-(e.g. ``NTIA``, ``FSCT3``) -- the edition is part of the id because each
+Rule identifiers follow the ``[SPEC]-[CATEGORY]-[NNN]`` convention
+(e.g. ``BOM-NTIA2021-DF-001``).  ``SPEC`` is :attr:`Spec.rule_prefix`, or
+``SBOM-`` plus the uppercased :attr:`Spec.id` when that is empty -- the
+edition is part of the id because each
 edition is a distinct standard with its own requirements; ``CATEGORY`` is
 :attr:`SpecCategory.code` (e.g. ``DF``, ``COMP``); ``NNN`` is
 :attr:`SpecRule.number` zero-padded to three digits.
@@ -43,7 +44,7 @@ Status = Literal["active", "catalogue-only", "tbd"]
 * ``catalogue-only`` -- rule appears in the catalogue (consumers can show
   the full spec surface) but the checker never emits results for it; either
   the attribute is aspirational or the check is not yet implemented.
-* ``tbd`` -- identifier is reserved in :file:`RULES.md` only.  The rule is
+* ``tbd`` -- identifier is reserved only (no rule is defined).  The rule is
   *not* added to the catalogue; it exists so that wiring up the check later
   does not require renumbering existing rules.
 """
@@ -290,7 +291,7 @@ class SpecRule:
 
     warning: str = ""
     """Canonical, single-sentence diagnostic prose for the rule, following
-    the parallel pattern documented in :file:`RULES.md`:
+    the parallel pattern:
 
     * component-level: ``"An SBOM component should have a {X}."``
     * document-level:  ``"An SBOM should {X}."``
@@ -385,7 +386,7 @@ class Spec:
     rule_prefix: str = ""
     """Prefix of every rule id, e.g. ``"BOM-NTIA2021"`` (source-spec token and
     edition year, as in the SBOM requirements ontology).  Empty selects the
-    legacy ``SBOM-<ID>`` form."""
+    default ``SBOM-<ID>`` form."""
 
     sbom_specs: tuple[str, ...] = ()
     """SBOM specifications (``"spdx2"``, ``"spdx3"``) the standard can be checked
@@ -396,8 +397,10 @@ class Spec:
     the composition ones (``contains``, ``dependsOn`` and the like), to find the
     components the rules judge.  The default, ``("trainedOn", "testedOn")``,
     makes a dataset that a reachable model was trained or tested on a
-    component, so the component rules judge it; ``()`` follows composition
-    only.  Edges are followed from ``from`` to ``to`` only."""
+    component, so the component rules judge it; ``()`` adds none.  A
+    relationship that a rule reads at the component (``direction: to``) is
+    followed whatever ``reach_via`` says.  Edges are followed from ``from`` to
+    ``to`` only."""
 
     uri: str = ""
     """General documentation URL for the standard.  Used as the fallback
@@ -527,7 +530,7 @@ class Spec:
         Only ``requirement`` provisions are blocking; ``recommendation`` /
         ``permission`` rules are still emitted as findings (warning / none) but
         are advisory -- a present-but-implausible value, say, is reported
-        without making the SBOM non-conformant.  Honours the assessment
+        without making the SBOM non-conformant.  Honors the assessment
         ``target`` the same way as :meth:`active_rules`.
         """
         return tuple(
