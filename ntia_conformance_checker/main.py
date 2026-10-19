@@ -69,6 +69,13 @@ def main() -> None:
             DEPRECATED_COMPLIANCE_IDS[args.comply],
         )
 
+    if spec_id in spec_ids():
+        # Say so before the report: a standard that does not cover this SBOM
+        # specification checks nothing, and a silent "not applicable" hides why.
+        notice = get_spec(spec_id).sbom_spec_notice(detected_sbom_spec)
+        if notice:
+            logging.warning("%s", notice)
+
     with warnings.catch_warnings():
         # The deprecated standard id is already reported through logging above.
         warnings.simplefilter("ignore", DeprecationWarning)

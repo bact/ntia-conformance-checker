@@ -541,10 +541,14 @@ def build_sarif(
     if spec is not None and not any(
         o.outcome in ("present", "missing") for o in outcomes.values()
     ):
+        text = (
+            spec.sbom_spec_notice(getattr(checker, "sbom_spec", "") or "")
+            or f"No requirement of {spec.title} applies."
+        )
         notifications.append(
             {
                 "level": "warning",
-                "message": {"text": f"No requirement of {spec.title} applies."},
+                "message": {"text": text},
                 "descriptor": {"id": "sbom.nothing-applies"},
             }
         )

@@ -27,9 +27,12 @@ A web-based version of the tool is available (no installation needed) at:
 
 `sbomcheck` exits with 0 when the SBOM conforms. It exits with 1 when the SBOM
 does not conform, and also when the file cannot be read or parsed (the report
-then says so: every checked rule is `missing`, or `not-applicable` when the
-standard does not cover the SBOM specification, and `executionSuccessful` is
-false in the SARIF). It exits with 2 for a usage error, an undeclared maturity
+then says so: every checked rule is `missing` and `executionSuccessful` is
+false in the SARIF). An SBOM that reads fine but whose specification the
+standard does not cover (`-c bsi`, `cisa2026` or `g7ai` on an SPDX 2 SBOM) checks
+nothing: every rule is `not-applicable`, the CLI logs a warning, and the SARIF
+carries a `sbom.nothing-applies` notification saying the standard is checked on
+SPDX 3 SBOMs only and this SBOM is SPDX 2. It exits with 2 for a usage error, an undeclared maturity
 level, or a report file that could not be written. When the SPDX version of the
 file cannot be determined, no SARIF file is written.
 

@@ -258,7 +258,7 @@ class RuleBasedChecker(BaseChecker):
         so they follow the checker's current attributes.
         """
         spec = self._spec
-        other_sbom = bool(spec.sbom_specs) and self.sbom_spec not in spec.sbom_specs
+        other_sbom = not spec.covers_sbom_spec(self.sbom_spec)
         results: dict[str, RuleResult] = {}
         rules = spec.emitted_rules()
         for rule in rules:
@@ -277,6 +277,10 @@ class RuleBasedChecker(BaseChecker):
             return RuleResult(rule_id=rule_id, outcome="out-of-scope")
         if rule.probe is None:
             raise ValueError(f"{self._spec.id}: active rule {rule.slug!r} has no probe")
+        if not self.doc:
+            # An unreadable SBOM is reported as such, whatever specification it
+            # claims: nothing about it can be said to be, or not to be, covered.
+            return RuleResult(rule_id=rule_id, outcome="missing", findings=(_UNPARSED,))
         if other_sbom:
             return RuleResult(rule_id=rule_id, outcome="not-applicable")
         params = rule.probe.params
@@ -284,8 +288,6 @@ class RuleBasedChecker(BaseChecker):
         if kind is not None and kind not in COMPONENT_KINDS:
             raise ValueError(f"{self._spec.id}: unknown component kind {kind!r}")
         component_rule = rule.element_id in COMPONENT_ELEMENT_IDS or kind is not None
-        if not self.doc:
-            return RuleResult(rule_id=rule_id, outcome="missing", findings=(_UNPARSED,))
         if component_rule and not self.components_evaluated:
             # Nothing to inspect: fail rather than pass over an empty list.
             return RuleResult(

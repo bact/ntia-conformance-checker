@@ -362,6 +362,11 @@ class SpecRule:
     not emitted in JSON output."""
 
 
+def _sbom_spec_name(sbom_spec: str) -> str:
+    """``spdx3`` -> ``SPDX 3``: the name a message shows for an SBOM specification."""
+    return f"SPDX {sbom_spec[4:]}" if sbom_spec.startswith("spdx") else sbom_spec
+
+
 @dataclass(frozen=True, kw_only=True)
 class Spec:
     """A compliance standard's full rule catalogue.
@@ -539,6 +544,22 @@ class Spec:
             if r.status == "active"
             and r.provision == "requirement"
             and self._in_scope(r, target)
+        )
+
+    def covers_sbom_spec(self, sbom_spec: str) -> bool:
+        """Whether the standard is checked on *sbom_spec* SBOMs (one that lists no
+        ``sbom_specs`` covers every SBOM specification)."""
+        return not self.sbom_specs or sbom_spec in self.sbom_specs
+
+    def sbom_spec_notice(self, sbom_spec: str) -> str | None:
+        """Why no rule is checked on a *sbom_spec* SBOM, or ``None`` when the
+        standard covers it."""
+        if self.covers_sbom_spec(sbom_spec):
+            return None
+        covered = " or ".join(_sbom_spec_name(s) for s in self.sbom_specs)
+        return (
+            f"{self.title}: checked on {covered} SBOMs only; this SBOM is "
+            f"{_sbom_spec_name(sbom_spec)}, so no rule was checked."
         )
 
     def emitted_rules(self) -> tuple[SpecRule, ...]:

@@ -119,6 +119,10 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Fixed
 
+- A standard that does not cover the SBOM's SPDX version (`bsi`, `cisa2026` or
+  `g7ai` on SPDX 2) now says why, as a CLI warning and in the SARIF
+  `sbom.nothing-applies` notification; an unreadable SBOM is reported as
+  unparsed under any standard, not as not applicable
 - A standard without System-level rules no longer reports `systemJudgedByModel`
 - SPDX 3 content that parses as JSON but is not valid SPDX 3 (including an
   abstract element type) is a parsing error, not a traceback; a failed report

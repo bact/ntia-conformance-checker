@@ -16,7 +16,8 @@ fields follow its
 and, where the mapping has no carrier, the SPDX 3.0.1 tables of the TR's own
 Appendix 8.2 (see "Beyond the mapping"). Outcomes are reported as for
 [`g7ai`](g7ai.md). SPDX 2 SBOMs are not covered: every checked rule is
-then `not-applicable`.
+then `not-applicable`, and the CLI and the SARIF report (`sbom.nothing-applies`)
+say that the standard is checked on SPDX 3 SBOMs only.
 
 ## Provisions
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import Any, Callable
@@ -230,6 +231,22 @@ def test_spdx2_sbom_is_not_covered() -> None:
     outcomes = set(checker.rule_outcomes().values())
     assert outcomes == {"not-applicable", "out-of-scope"}
     assert checker.check_compliance() is False
+
+
+def test_cli_warns_when_the_standard_does_not_cover_the_sbom_spec(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """``-c bsi`` on an SPDX 2 SBOM checks nothing; the CLI says why up front."""
+    monkeypatch.setattr(
+        sys, "argv", ["sbomcheck", "-c", "bsi", "-s", "spdx2", str(SPDX2)]
+    )
+    with caplog.at_level(logging.WARNING), pytest.raises(SystemExit) as exit_info:
+        main()
+    capsys.readouterr()
+    assert exit_info.value.code == 1
+    assert "checked on SPDX 3 SBOMs only; this SBOM is SPDX 2" in caplog.text
 
 
 @pytest.mark.parametrize(

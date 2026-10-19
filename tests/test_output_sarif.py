@@ -243,6 +243,44 @@ def test_rule_outcomes_and_nothing_applies_note() -> None:
     assert run["properties"]["conformant"] is False
 
 
+@pytest.mark.parametrize(
+    ("standard", "covered"),
+    [("g7ai", "SPDX 3"), ("bsi", "SPDX 3"), ("cisa2026", "SPDX 3")],
+)
+def test_uncovered_sbom_spec_note_says_why(standard: str, covered: str) -> None:
+    """A standard that covers only SPDX 3 says so on an SPDX 2 SBOM, instead of
+    the bare "no requirement applies"."""
+    run = _run(RuleBasedChecker(NTIA_OK, compliance=standard, sbom_spec="spdx2"))
+    (note,) = run["invocations"][0]["toolExecutionNotifications"]
+    text = note["message"]["text"]
+    assert note["descriptor"]["id"] == "sbom.nothing-applies"
+    assert f"checked on {covered} SBOMs only; this SBOM is SPDX 2" in text
+    assert "no rule was checked" in text
+
+
+def test_covered_sbom_spec_keeps_the_generic_nothing_applies_note() -> None:
+    """A rule-less outcome on a covered SBOM keeps the generic wording."""
+    checker = RuleBasedChecker(NTIA_OK, compliance="ntia", sbom_spec="spdx2")
+    spec = checker.spec
+    assert spec.sbom_spec_notice("spdx2") is None
+    assert spec.covers_sbom_spec("spdx2") and spec.covers_sbom_spec("spdx3")
+
+
+@pytest.mark.parametrize("sbom_spec", ["spdx2", "spdx3"])
+def test_unreadable_sbom_is_unparsed_not_uncovered(sbom_spec: str) -> None:
+    """An unreadable SBOM is reported as unreadable under a standard that does not
+    cover its specification too: every active rule is missing, none not-applicable."""
+    run = _run(
+        RuleBasedChecker("no/such/file.json", compliance="bsi", sbom_spec=sbom_spec)
+    )
+    outcomes = set(run["properties"]["ruleOutcomes"].values())
+    assert outcomes == {"missing", "out-of-scope"}
+    assert {r["message"]["text"] for r in run["results"]} == {
+        "The SBOM could not be parsed."
+    }
+    assert run["invocations"][0]["executionSuccessful"] is False
+
+
 def test_artifact_index_only_when_the_run_lists_the_artifact() -> None:
     checker = _ntia(NTIA_NO_SUPPLIER)
     loc = _run(checker)["results"][0]["locations"][0]["physicalLocation"]
