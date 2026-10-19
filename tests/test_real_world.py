@@ -12,6 +12,8 @@ import pytest
 
 from ntia_conformance_checker import SbomChecker
 
+pytestmark = pytest.mark.real_world  # opt in with --real-world
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "real_world_sboms")
 
 
@@ -41,7 +43,7 @@ def test_real_world_robustness(filename: str) -> None:
 
     try:
         sbom = SbomChecker(filepath)
-        is_compliant = sbom.compliant
+        is_compliant = sbom.check_compliance()
         assert isinstance(is_compliant, bool)
 
     except Exception as e:  # pylint: disable=broad-exception-caught

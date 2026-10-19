@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 from typing import TYPE_CHECKING, Any, Union
@@ -20,6 +19,24 @@ from spdx_tools.spdx.validation.validation_message import (
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+
+#: Every SPDX 3.0.1 relationship type name (``dependsOn``, ``trainedOn``, ...).
+SPDX3_RELATIONSHIP_TYPES: frozenset[str] = frozenset(
+    spdx3.RelationshipType.NAMED_INDIVIDUALS
+)
+
+#: IRIs of the SPDX 3.0.1 individuals that stand for an element, such as
+#: ``NoneElement`` (a relationship to nothing) or ``NoAssertionLicense``. A
+#: document refers to them without defining them.
+SPDX3_INDIVIDUAL_ELEMENT_IRIS: frozenset[str] = frozenset(
+    iri
+    for cls in (
+        spdx3.IndividualElement,
+        spdx3.expandedlicensing_IndividualLicensingInfo,
+        spdx3.Organization,
+    )
+    for iri in cls.NAMED_INDIVIDUALS.values()
+)
 
 SPDX3_PACKAGE_DEPENDENCY_RELATIONSHIP_TYPES = (
     "contains",
@@ -397,7 +414,17 @@ def parse_spdx3_file(file_path: str) -> tuple[spdx3.SHACLObjectSet | None, list[
     try:
         with open(file_path, "rb") as f:
             spdx3.JSONLDDeserializer().read(f, object_set)
-    except (OSError, json.JSONDecodeError) as err:
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        AttributeError,
+        NotImplementedError,
+    ) as err:
+        # json.JSONDecodeError is a ValueError; content that parses as JSON but
+        # is not valid SPDX 3 raises the others (NotImplementedError: an abstract
+        # class used as an element type).
         logging.warning("SPDX3 deserialization failed: %s", err)
         parsing_errors.append(str(err))
         return None, parsing_errors

@@ -51,7 +51,10 @@ ruff check --fix . && mypy ntia_conformance_checker tests && pylint ntia_conform
   testing integration.
 - If a CI failure stems from differing dependency versions, prefer pinning
   the tool or adding an explanatory comment and raising a PR to align versions.
-- tests/test_real_world.py can be slow, only run it when necessary.
+- tests/test_real_world.py is slow and skipped by default; run it with
+  `pytest --real-world` (or `pytest tests/test_real_world.py --real-world`)
+  occasionally, for example before a release, not in routine runs. The release
+  workflow (`python-publish.yml`) runs them before publishing.
 
 ## 6. Security & secrets
 

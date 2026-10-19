@@ -1,0 +1,296 @@
+# SPDX-FileContributor: Arthit Suriyawongkul
+# SPDX-FileCopyrightText: 2026-present Arthit Suriyawongkul
+# SPDX-FileType: SOURCE
+# SPDX-License-Identifier: CC0-1.0
+# BSI TR-03183-2 SBOM Information Requirements v2.1.0
+# Federal Office for Information Security (BSI), Germany, 2025-08-20
+# Source: https://bsi.bund.de/dok/TR-03183-en
+
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix vann:    <http://purl.org/vocab/vann/> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix bsi2025:  <https://w3id.org/bom/req/bsi2025/> .
+@prefix bom:    <https://w3id.org/bom/> .
+
+# BSI TR-03183-2 sub-vocabulary; imports the SBOM bridge ontology
+<https://w3id.org/bom/req/bsi2025/>
+    a owl:Ontology ;
+    owl:imports <https://w3id.org/bom/> ;
+    owl:versionInfo "0.1.0" ;
+    dcterms:creator <https://orcid.org/0000-0002-9698-1899> ;
+    dcterms:title "BSI Technical Guideline TR-03183-2: SBOM Information Requirements"@en ;
+    dcterms:description "SKOS concept scheme of the BSI TR-03183-2 SBOM Information Requirements v2.1.0, with each element linked to the bridge concepts of the BOM ontology (https://w3id.org/bom/)."@en ;
+    dcterms:license <https://creativecommons.org/publicdomain/zero/1.0/> ;
+    dcterms:created "2026-06-18"^^xsd:date ;
+    dcterms:source <https://bsi.bund.de/dok/TR-03183-en> ;
+    dcterms:issued "2025-08-20"^^xsd:date ;
+    dcterms:publisher <https://orcid.org/0000-0002-9698-1899> ;
+    dcterms:rights "Copyright 2026-present Arthit Suriyawongkul. Dedicated to the public domain under CC0 1.0 Universal."@en ;
+    dcterms:bibliographicCitation "Suriyawongkul, A. (2026). BSI Technical Guideline TR-03183-2: SBOM Information Requirements. https://w3id.org/bom/req/bsi2025/"@en ;
+    dcterms:conformsTo <http://www.w3.org/2004/02/skos/core> ;
+    vann:preferredNamespacePrefix "bsi2025" ;
+    vann:preferredNamespaceUri "https://w3id.org/bom/req/bsi2025/"^^xsd:anyURI ;
+    dcterms:modified "2026-10-16"^^xsd:date .
+
+
+# ============================================================================
+# CONCEPT SCHEME AND DEFINITIONS
+# ============================================================================
+
+bsi2025:scheme
+    a skos:ConceptScheme, bom:InfoRequirementSpec ;
+    skos:prefLabel "BSI TR-03183-2 SBOM Information Requirements v2.1.0"@en ;
+    dcterms:title "BSI Technical Guideline TR-03183-2: SBOM Information Requirements" ;
+    dcterms:creator "Federal Office for Information Security (BSI), Germany" ;
+    dcterms:issued "2025-08-20"^^xsd:date ;
+    dcterms:created "2026-06-18"^^xsd:date ;
+    dcterms:hasVersion "2.1.0" ;
+    dcterms:source <https://bsi.bund.de/dok/TR-03183-en> ;
+    skos:hasTopConcept
+        bsi2025:doc-creator , bsi2025:doc-timestamp , bsi2025:doc-uri ,
+        bsi2025:component-creator , bsi2025:component-name , bsi2025:component-version ,
+        bsi2025:component-filename , bsi2025:component-dependencies ,
+        bsi2025:component-distribution-license , bsi2025:component-hash-deployable ,
+        bsi2025:is-executable , bsi2025:is-archive ,
+        bsi2025:is-structured ,
+        bsi2025:component-source-uri , bsi2025:component-distribution-uri ,
+        bsi2025:component-identifiers , bsi2025:component-original-license ,
+        bsi2025:component-license-effective , bsi2025:component-hash-source ,
+        bsi2025:component-security-txt .
+
+# -- BSI TR-03183-2: Required data fields for the SBOM itself (Table 2) -------
+
+bsi2025:doc-creator
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Creator of the SBOM"@en ;
+    skos:definition "Email address (or URL if no email available) of the entity that created the document."@en ;
+    skos:notation "BOM-BSI2025-DOC-001"^^bom:SarifRuleId ;
+    skos:exactMatch bom:doc-author .
+
+bsi2025:doc-timestamp
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Timestamp"@en ;
+    skos:definition "Date and time of the SBOM data compilation, preferably in UTC."@en ;
+    skos:notation "BOM-BSI2025-DOC-002"^^bom:SarifRuleId ;
+    skos:exactMatch bom:doc-timestamp .
+
+# -- BSI TR-03183-2: Additional data fields for the SBOM itself (Table 4) -----
+
+bsi2025:doc-uri
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "BOM-URI"@en ;
+    skos:definition "A URI uniquely identifying this document (required if it exists)."@en ;
+    skos:notation "BOM-BSI2025-DOC-003"^^bom:SarifRuleId ;
+    skos:exactMatch bom:doc-identifier .
+
+# -- BSI TR-03183-2: Required data fields for each component (Tables 3-4) -----
+
+bsi2025:component-creator
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Component creator"@en ;
+    skos:definition "Email address (or URL if no email available) of the entity that created and maintains the component."@en ;
+    skos:scopeNote "BSI TR-03183-2 uses 'creator' (the entity that authored the component) rather than 'supplier' (the entity that provides it). Distinct from NTIA's 'Supplier Name'."@en ;
+    skos:notation "BOM-BSI2025-COMP-001"^^bom:SarifRuleId ;
+    skos:relatedMatch bom:component-supplier ;
+    skos:exactMatch bom:component-producer .
+
+bsi2025:component-name
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Component name"@en ;
+    skos:definition "Name assigned to the component by its creator; if no name is assigned, the actual filename MUST be used."@en ;
+    skos:notation "BOM-BSI2025-COMP-002"^^bom:SarifRuleId ;
+    skos:exactMatch bom:component-name .
+
+bsi2025:component-version
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Component version"@en ;
+    skos:definition "Identifier used by the creator to specify changes relative to a previously created version; preferably Semantic Versioning or Calendar Versioning."@en ;
+    skos:notation "BOM-BSI2025-COMP-003"^^bom:SarifRuleId ;
+    skos:exactMatch bom:component-version .
+
+bsi2025:component-filename
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Filename of the component"@en ;
+    skos:definition "The actual filename of the component (i.e. not its file system path) as deployed."@en ;
+    skos:notation "BOM-BSI2025-COMP-004"^^bom:SarifRuleId ;
+    skos:exactMatch bom:component-filename .
+
+bsi2025:component-dependencies
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Dependencies on other components"@en ;
+    skos:definition "Enumeration of all components on which this component directly depends or which it contains, with an explicit completeness indication."@en ;
+    skos:notation "BOM-BSI2025-COMP-005"^^bom:SarifRuleId ;
+    skos:closeMatch bom:MetadataRelationship ;
+    skos:exactMatch bom:rel-depends-on .
+
+bsi2025:component-distribution-license
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Distribution licences"@en ;
+    skos:altLabel "Concluded licence"@en ;
+    skos:definition "The licence(s) under which the component can be used by a licensee (i.e. the concluded/distribution licence expressed as an SPDX licence expression)."@en ;
+    skos:scopeNote "BSI TR-03183-2 distinguishes 'distribution licences' (concluded, what a downstream recipient may do) from 'original licences' (declared, what the upstream creator states). This concept covers the former."@en ;
+    skos:notation "BOM-BSI2025-COMP-006"^^bom:SarifRuleId ;
+    skos:exactMatch bom:component-concluded-license .
+
+bsi2025:component-hash-deployable
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Hash value of the deployable component"@en ;
+    skos:definition "SHA-512 cryptographic checksum of the deployed or deployable form of the component (as a file on a mass storage device)."@en ;
+    skos:scopeNote "BSI TR-03183-2 mandates SHA-512 specifically. The bridge concept bom:component-hash is algorithm-agnostic."@en ;
+    skos:notation "BOM-BSI2025-COMP-007"^^bom:SarifRuleId ;
+    skos:exactMatch bom:component-hash .
+
+bsi2025:is-executable
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Is executable"@en ;
+    skos:definition "Whether the component is executable; possible values: 'executable' / 'non-executable'."@en ;
+    skos:notation "BOM-BSI2025-COMP-008"^^bom:SarifRuleId ;
+    skos:exactMatch bom:is-executable .
+
+bsi2025:is-archive
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Is archive"@en ;
+    skos:definition "Whether the component is an archive; possible values: 'archive' / 'no archive'."@en ;
+    skos:notation "BOM-BSI2025-COMP-009"^^bom:SarifRuleId ;
+    skos:exactMatch bom:is-archive .
+
+bsi2025:is-structured
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Is structured"@en ;
+    skos:definition "Whether the component is a structured file whose internal metadata is still present; possible values: 'structured' / 'unstructured'."@en ;
+    skos:notation "BOM-BSI2025-COMP-010"^^bom:SarifRuleId ;
+    skos:exactMatch bom:is-structured .
+
+# -- BSI TR-03183-2: Additional data fields for each component (Table 5) ------
+
+bsi2025:component-source-uri
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Source code URI"@en ;
+    skos:definition "URI of the source code of the component (e.g. a versioned repository URL), required if it exists."@en ;
+    skos:notation "BOM-BSI2025-COMP-011"^^bom:SarifRuleId ;
+    skos:exactMatch bom:component-code-repository .
+
+bsi2025:component-distribution-uri
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "URI of the deployable form of the component"@en ;
+    skos:definition "URI pointing directly to the deployable (e.g. downloadable) form of the component, required if it exists."@en ;
+    skos:notation "BOM-BSI2025-COMP-012"^^bom:SarifRuleId ;
+    skos:closeMatch bom:component-external-ref ;
+    skos:closeMatch bom:component-distribution .
+
+bsi2025:component-identifiers
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Other unique identifiers"@en ;
+    skos:definition "Other identifiers usable to identify the component or look it up in relevant databases (CPE, SWID, Package URL / PURL), required if they exist."@en ;
+    skos:notation "BOM-BSI2025-COMP-013"^^bom:SarifRuleId ;
+    skos:exactMatch bom:component-identifier .
+
+bsi2025:component-original-license
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Original licences"@en ;
+    skos:altLabel "Declared licence"@en ;
+    skos:definition "The licence(s) assigned by the creator of the component (i.e. the declared/upstream licence), required if it exists."@en ;
+    skos:scopeNote "Corresponds to the 'declared' licence perspective. Contrast with bsi2025:component-distribution-license (concluded). The two map to the narrower bridge concepts bom:component-declared-license and bom:component-concluded-license."@en ;
+    skos:notation "BOM-BSI2025-COMP-014"^^bom:SarifRuleId ;
+    skos:exactMatch bom:component-declared-license .
+
+# -- BSI TR-03183-2: Optional data fields for each component (Table 6) --------
+
+bsi2025:component-license-effective
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Effective licence"@en ;
+    skos:definition "The licence under which the component is actually used by the licensee that is the creator of the current SBOM (optional)."@en ;
+    skos:notation "BOM-BSI2025-COMP-015"^^bom:SarifRuleId ;
+    skos:closeMatch bom:component-concluded-license .
+
+bsi2025:component-hash-source
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "Hash value of the source code of the component"@en ;
+    skos:definition "Cryptographic checksum of the component source code (algorithm not yet standardised in TR-03183-2; optional)."@en ;
+    skos:notation "BOM-BSI2025-COMP-016"^^bom:SarifRuleId ;
+    skos:closeMatch bom:component-hash .
+
+bsi2025:component-security-txt
+    a skos:Concept ;
+    skos:topConceptOf bsi2025:scheme ;
+    skos:inScheme bsi2025:scheme ;
+    skos:prefLabel "URL of the security.txt"@en ;
+    skos:definition "URL of the component creator's security.txt file (RFC 9116) providing coordinated vulnerability disclosure contact information (optional)."@en ;
+    skos:notation "BOM-BSI2025-COMP-017"^^bom:SarifRuleId ;
+    skos:closeMatch bom:security-policy .
+
+
+# ============================================================================
+# OBLIGATION ASSERTIONS
+# ============================================================================
+
+# -- Required: SBOM itself (Table 2) ------------------------------------------
+bsi2025:doc-creator             bom:provisionType bom:Requirement .
+bsi2025:doc-timestamp           bom:provisionType bom:Requirement .
+
+# -- Additional if exists: SBOM itself (Table 4) ------------------------------
+bsi2025:doc-uri                 bom:provisionType bom:ConditionalRequirement .
+
+# -- Required: each component (Tables 3-4) ------------------------------------
+bsi2025:component-creator             bom:provisionType bom:Requirement .
+bsi2025:component-name                bom:provisionType bom:Requirement .
+bsi2025:component-version             bom:provisionType bom:Requirement .
+bsi2025:component-filename            bom:provisionType bom:Requirement .
+bsi2025:component-dependencies        bom:provisionType bom:Requirement .
+bsi2025:component-distribution-license bom:provisionType bom:Requirement .
+bsi2025:component-hash-deployable     bom:provisionType bom:Requirement .
+bsi2025:is-executable bom:provisionType bom:Requirement .
+bsi2025:is-archive    bom:provisionType bom:Requirement .
+bsi2025:is-structured bom:provisionType bom:Requirement .
+
+# -- Additional if exists: each component (Table 5) ---------------------------
+bsi2025:component-source-uri          bom:provisionType bom:ConditionalRequirement .
+bsi2025:component-distribution-uri    bom:provisionType bom:ConditionalRequirement .
+bsi2025:component-identifiers         bom:provisionType bom:ConditionalRequirement .
+bsi2025:component-original-license    bom:provisionType bom:ConditionalRequirement .
+
+# -- Optional: each component (Table 6) ---------------------------------------
+bsi2025:component-license-effective   bom:provisionType bom:Permission .
+bsi2025:component-hash-source         bom:provisionType bom:Permission .
+bsi2025:component-security-txt        bom:provisionType bom:Permission .
