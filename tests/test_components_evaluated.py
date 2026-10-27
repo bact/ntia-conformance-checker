@@ -4,6 +4,7 @@
 
 """Tests for reports when no component is reachable from the SBOM root."""
 
+import functools
 import json
 from collections.abc import Callable
 from pathlib import Path
@@ -11,7 +12,7 @@ from typing import Any
 
 import pytest
 
-from ntia_conformance_checker import BSIChecker, NTIAChecker
+from ntia_conformance_checker import NTIAChecker, RuleBasedChecker
 from ntia_conformance_checker.base_checker import BaseChecker
 from ntia_conformance_checker.fsct_checker import FSCT3Checker
 
@@ -47,14 +48,19 @@ def _no_describes(sbom: dict[str, Any]) -> None:
         (NTIAChecker, SPDX3, _empty_root, False),
         (NTIAChecker, SPDX3, _two_docs, False),
         (FSCT3Checker, SPDX3, _empty_root, False),
-        (BSIChecker, BSI, _empty_root, False),
+        (
+            functools.partial(RuleBasedChecker, compliance="bsi"),
+            BSI,
+            _empty_root,
+            False,
+        ),
         (NTIAChecker, SPDX2, None, True),
         (NTIAChecker, SPDX2, _no_describes, False),
     ],
 )
 def test_components_evaluated(
     tmp_path: Path,
-    checker_cls: type[BaseChecker],
+    checker_cls: Callable[..., BaseChecker],
     src: Path,
     edit: Callable[[dict[str, Any]], None] | None,
     evaluated: bool,
@@ -81,5 +87,5 @@ def test_components_evaluated(
         rows = [
             ok for label, ok in checker.table_elements if "component" in label.lower()
         ]
-        assert not checker.compliant
+        assert not checker.check_compliance()
         assert rows and not any(groups + rows)

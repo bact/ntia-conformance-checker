@@ -72,10 +72,34 @@ jobs:
         path: dist/
         retention-days: 60
 
+  # The slow tests on real-world SBOMs run here, before a release, and not on
+  # pull requests. A job of its own keeps the test dependencies out of the
+  # Python that "build" generates the SBOM in.
+  test:
+    name: Test, including the real-world SBOMs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+    - name: Set up Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+      with:
+        python-version: '3.14'
+        cache: 'pip'
+    - name: Install dependencies
+      run: |
+        pip install pip==26.2.1
+        pip install ".[test]"
+    - name: Test with pytest
+      run: python -m pytest --real-world
+
   publish:
     name: Publish to PyPI
-    # Only if the SBOM was built and validated in "build".
-    needs: build
+    # Only if the SBOM was built and validated in "build", and the tests passed.
+    needs: [build, test]
     runs-on: ubuntu-latest
     permissions:
        # 'id-token: write' is mandatory for trusted publishing

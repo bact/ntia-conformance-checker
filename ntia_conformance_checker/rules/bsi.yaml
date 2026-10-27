@@ -1,0 +1,295 @@
+# SPDX-FileContributor: Arthit Suriyawongkul
+# SPDX-FileCopyrightText: 2026-present SPDX contributors
+# SPDX-FileType: SOURCE
+# SPDX-License-Identifier: Apache-2.0
+
+# BSI TR-03183-2 v2.1.0, SBOM content requirements (section 5.2).
+#
+# Rule ids, labels and provisions follow the SBOM requirements ontology
+# https://bact.github.io/bom/req/bsi2025/ (0.1.0); the SPDX 3.0.1 fields follow
+# https://bact.github.io/bom/mapping/bsi2025-to-spdx30.sssom.tsv (0.2.0).
+# Where the mapping has no carrier for a value BSI requires, the rule also
+# reads the SPDX 3.0.1 shape of the TR's own Appendix 8.2 (Tables 8 to 12):
+# the deployable file is a software_File linked by hasDistributionArtifact.
+# bsi.md lists those additions ("Beyond the mapping").
+# Provisions: Requirement -> requirement; ConditionalRequirement ("if it
+# exists") -> requirement with applies_when; Permission -> permission.
+# Source: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03183/BSI-TR-03183-2_v2_1_0.html
+
+spec:
+  id: bsi
+  rule_prefix: BOM-BSI2025
+  title: BSI TR-03183-2 v2.1.0 SBOM content requirements
+  uri: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03183/BSI-TR-03183-2_v2_1_0.html
+  sbom_specs: [spdx3]
+  taxonomies:
+    category: bsi2025-sbom-information-requirements
+
+categories:
+  - id: sbom-itself
+    code: DOC
+    title: Data fields for the SBOM itself
+  - id: each-component
+    code: COMP
+    title: Data fields for each component
+
+rules:
+
+  # ---- The SBOM itself (Tables 2 and 4) ---------------------------------
+
+  - number: 1
+    slug: bsi-doc-creator-missing
+    spec_category: sbom-itself
+    element_description: "creator of the SBOM"
+    competency_question: "Creator of the SBOM (email or URL) provided?"
+    warning: "The SBOM creator has no email address or URL."
+    provision: requirement
+    probe:
+      name: require_document_contact
+      params: {"properties": ["createdBy"]}
+
+  - number: 2
+    slug: bsi-doc-timestamp-missing
+    spec_category: sbom-itself
+    element_id: timestamp
+    element_description: "SBOM timestamp"
+    competency_question: "Timestamp provided?"
+    warning: "The SBOM timestamp is missing."
+    provision: requirement
+    probe:
+      name: require_document_attribute
+      params: {"attribute": "timestamp"}
+
+  # Conditional: every SPDX 3 element has an spdxId, so a BOM-URI always
+  # exists; there is nothing to check.
+  - number: 3
+    slug: bsi-doc-uri-missing
+    spec_category: sbom-itself
+    element_description: "BOM-URI"
+    competency_question: "BOM-URI provided?"
+    warning: "The BOM-URI is missing."
+    provision: requirement
+    status: catalogue-only
+
+  # ---- Each component, required (Table 3) -------------------------------
+
+  - number: 1
+    slug: bsi-component-creator-missing
+    spec_category: each-component
+    element_description: "component creator"
+    competency_question: "Component creators (email or URL) provided?"
+    warning: "A component creator has no email address or URL."
+    provision: requirement
+    probe:
+      name: require_contact
+      params: {"kind": "component", "properties": ["originatedBy"]}
+
+  - number: 2
+    slug: bsi-component-name-missing
+    spec_category: each-component
+    element_id: name
+    element_description: "component name"
+    competency_question: "Component names provided?"
+    warning: "A component name is missing."
+    provision: requirement
+    probe:
+      name: require_component_attribute
+      params: {"attribute": "name"}
+
+  - number: 3
+    slug: bsi-component-version-missing
+    spec_category: each-component
+    element_id: version
+    element_description: "component version"
+    competency_question: "Component versions provided?"
+    warning: "A component version is missing."
+    provision: requirement
+    probe:
+      name: require_component_attribute
+      params: {"attribute": "version"}
+
+  - number: 4
+    slug: bsi-component-filename-missing
+    spec_category: each-component
+    element_description: "component filename"
+    competency_question: "Component filenames provided?"
+    warning: "A component has no distribution artifact with a filename."
+    provision: requirement
+    probe:
+      name: require_relationship
+      params:
+        kind: component
+        relationships: [hasDistributionArtifact]
+        target_has: [name]
+
+  - number: 5
+    slug: bsi-component-dependencies-missing
+    spec_category: each-component
+    element_description: "component dependencies with completeness"
+    competency_question: "Component dependencies (with completeness) provided?"
+    warning: "A component does not enumerate its dependencies with a completeness."
+    provision: requirement
+    probe:
+      name: require_relationship
+      params:
+        kind: component
+        relationships: [dependsOn, contains]
+        completeness: true
+
+  - number: 6
+    slug: bsi-component-distribution-license-missing
+    spec_category: each-component
+    element_description: "component distribution license"
+    competency_question: "Component distribution licenses provided?"
+    warning: "A component distribution (concluded) license is missing."
+    provision: requirement
+    probe:
+      name: require_relationship
+      params: {"kind": "component", "relationships": ["hasConcludedLicense"]}
+
+  - number: 7
+    slug: bsi-component-hash-deployable-missing
+    spec_category: each-component
+    element_description: "SHA-512 hash of the deployable component"
+    competency_question: "Deployable component SHA-512 hashes provided?"
+    warning: "A deployable component has no SHA-512 hash."
+    provision: requirement
+    probe:
+      name: require_hash
+      params:
+        kind: component
+        algorithms: [sha512]
+        via: [hasDistributionArtifact]
+
+  # Executable and archive: BSI states "non-executable" and "no archive" by
+  # leaving the purpose out, so every component gives a value.
+  - number: 8
+    slug: bsi-is-executable-missing
+    spec_category: each-component
+    element_description: "executable property"
+    competency_question: "Executable properties provided?"
+    warning: "An executable property is missing."
+    provision: requirement
+    status: catalogue-only
+
+  - number: 9
+    slug: bsi-is-archive-missing
+    spec_category: each-component
+    element_description: "archive property"
+    competency_question: "Archive properties provided?"
+    warning: "An archive property is missing."
+    provision: requirement
+    status: catalogue-only
+
+  # Structured: container (structured) or firmware (unstructured), on the
+  # component or its distribution artifact (BSI Table 9).
+  - number: 10
+    slug: bsi-is-structured-missing
+    spec_category: each-component
+    element_description: "structured property"
+    competency_question: "Structured properties provided?"
+    warning: "A component is neither marked container (structured) nor firmware (unstructured)."
+    provision: requirement
+    probe:
+      name: require_property
+      params:
+        kind: component
+        properties:
+          - software_primaryPurpose/container
+          - software_additionalPurpose/container
+          - software_primaryPurpose/firmware
+          - software_additionalPurpose/firmware
+        via: [hasDistributionArtifact]
+
+  # ---- Each component, if it exists (Table 5) ---------------------------
+
+  - number: 11
+    slug: bsi-component-source-uri-missing
+    spec_category: each-component
+    element_description: "source code URI"
+    competency_question: "Source code URIs provided (where they exist)?"
+    warning: "A source code URI is missing."
+    provision: requirement
+    probe: &source-uri
+      name: require_property
+      params: {"kind": "component", "properties": ["externalRef/vcs"]}
+    applies_when: *source-uri
+
+  - number: 12
+    slug: bsi-component-distribution-uri-missing
+    spec_category: each-component
+    element_description: "URI of the deployable form"
+    competency_question: "Deployable form URIs provided (where they exist)?"
+    warning: "A URI of the deployable form is missing."
+    provision: requirement
+    probe: &distribution-uri
+      name: require_property
+      params:
+        kind: component
+        properties:
+          - software_downloadLocation
+          - externalRef/altDownloadLocation
+          - externalRef/binaryArtifact
+        via: [hasDistributionArtifact]
+    applies_when: *distribution-uri
+
+  - number: 13
+    slug: bsi-component-identifiers-missing
+    spec_category: each-component
+    element_description: "other unique identifiers"
+    competency_question: "Other unique identifiers provided (where they exist)?"
+    warning: "Another unique identifier is missing."
+    provision: requirement
+    probe: &identifiers
+      name: require_property
+      params:
+        kind: component
+        properties: [software_packageUrl, externalIdentifier, software_contentIdentifier]
+    applies_when: *identifiers
+
+  - number: 14
+    slug: bsi-component-original-license-missing
+    spec_category: each-component
+    element_description: "original license"
+    competency_question: "Original licenses provided (where they exist)?"
+    warning: "An original (declared) license is missing."
+    provision: requirement
+    probe: &original-license
+      name: require_relationship
+      params: {"kind": "component", "relationships": ["hasDeclaredLicense"]}
+    applies_when: *original-license
+
+  # ---- Each component, optional (Table 6) -------------------------------
+
+  - number: 15
+    slug: bsi-component-license-effective-missing
+    spec_category: each-component
+    element_description: "effective license"
+    competency_question: "Effective licenses provided?"
+    warning: "An effective license is missing."
+    provision: permission
+    probe:
+      name: require_relationship
+      params: {"kind": "component", "relationships": ["hasConcludedLicense"]}
+
+  - number: 16
+    slug: bsi-component-hash-source-missing
+    spec_category: each-component
+    element_description: "hash of the source code"
+    competency_question: "Source code hashes provided?"
+    warning: "A source code hash is missing."
+    provision: permission
+    status: catalogue-only
+
+  - number: 17
+    slug: bsi-component-security-txt-missing
+    spec_category: each-component
+    element_description: "URL of the security.txt"
+    competency_question: "security.txt URLs provided?"
+    warning: "A security.txt URL is missing."
+    provision: permission
+    probe:
+      name: require_property
+      params:
+        kind: component
+        properties: [externalRef/securityPolicy, externalRef/securityOther]
