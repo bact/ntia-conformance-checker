@@ -31,7 +31,7 @@ B = "https://spdx.org/spdxdocs/cisa2026-tests/"
 P = "BOM-CISA2026-"
 #: The ontology's SARIF rule ids (https://bact.github.io/bom/req/cisa2026/).
 #: The Practices and Processes ids are the checker's: the ontology gives those
-#: elements a notation (CISA2026-PP-01) but no SARIF rule id.
+#: elements a notation (CISA2026-PP-001) but no SARIF rule id.
 ONTOLOGY_IDS = {
     "sbom-author": "META-001",
     "sbom-author-signature": "META-002",
