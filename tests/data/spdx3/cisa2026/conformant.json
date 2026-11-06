@@ -1,0 +1,134 @@
+{
+  "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+  "@graph": [
+    {
+      "type": "CreationInfo",
+      "@id": "_:ci",
+      "specVersion": "3.0.1",
+      "createdBy": [
+        "https://spdx.org/spdxdocs/cisa2026-tests/Person1"
+      ],
+      "createdUsing": [
+        "https://spdx.org/spdxdocs/cisa2026-tests/Tool1"
+      ],
+      "created": "2026-10-01T00:00:00Z"
+    },
+    {
+      "type": "Person",
+      "spdxId": "https://spdx.org/spdxdocs/cisa2026-tests/Person1",
+      "creationInfo": "_:ci",
+      "name": "Test User"
+    },
+    {
+      "type": "Organization",
+      "spdxId": "https://spdx.org/spdxdocs/cisa2026-tests/Org1",
+      "creationInfo": "_:ci",
+      "name": "Example Org"
+    },
+    {
+      "type": "Tool",
+      "spdxId": "https://spdx.org/spdxdocs/cisa2026-tests/Tool1",
+      "creationInfo": "_:ci",
+      "name": "cisa2026-test-generator"
+    },
+    {
+      "type": "SpdxDocument",
+      "spdxId": "https://spdx.org/spdxdocs/cisa2026-tests/Document1",
+      "creationInfo": "_:ci",
+      "name": "CISA 2026 test",
+      "profileConformance": [
+        "core",
+        "software"
+      ],
+      "rootElement": [
+        "https://spdx.org/spdxdocs/cisa2026-tests/SBOM1"
+      ]
+    },
+    {
+      "type": "software_Sbom",
+      "spdxId": "https://spdx.org/spdxdocs/cisa2026-tests/SBOM1",
+      "creationInfo": "_:ci",
+      "name": "SBOM",
+      "software_sbomType": [
+        "analyzed"
+      ],
+      "rootElement": [
+        "https://spdx.org/spdxdocs/cisa2026-tests/App"
+      ]
+    },
+    {
+      "type": "software_Package",
+      "spdxId": "https://spdx.org/spdxdocs/cisa2026-tests/App",
+      "creationInfo": "_:ci",
+      "name": "app",
+      "software_packageVersion": "1.0",
+      "software_packageUrl": "pkg:pypi/app@1.0",
+      "originatedBy": [
+        "https://spdx.org/spdxdocs/cisa2026-tests/Org1"
+      ],
+      "verifiedUsing": [
+        {
+          "type": "Hash",
+          "algorithm": "sha256",
+          "hashValue": "abababababababababababababababababababababababababababababababab"
+        }
+      ],
+      "software_downloadLocation": "https://example.com/app"
+    },
+    {
+      "type": "software_Package",
+      "spdxId": "https://spdx.org/spdxdocs/cisa2026-tests/Lib",
+      "creationInfo": "_:ci",
+      "name": "lib",
+      "software_packageVersion": "2.0",
+      "software_packageUrl": "pkg:pypi/lib@2.0",
+      "originatedBy": [
+        "https://spdx.org/spdxdocs/cisa2026-tests/Org1"
+      ],
+      "verifiedUsing": [
+        {
+          "type": "Hash",
+          "algorithm": "sha256",
+          "hashValue": "abababababababababababababababababababababababababababababababab"
+        }
+      ],
+      "software_downloadLocation": "https://example.com/lib"
+    },
+    {
+      "type": "Relationship",
+      "spdxId": "https://spdx.org/spdxdocs/cisa2026-tests/Rel-dep",
+      "creationInfo": "_:ci",
+      "relationshipType": "dependsOn",
+      "from": "https://spdx.org/spdxdocs/cisa2026-tests/App",
+      "to": [
+        "https://spdx.org/spdxdocs/cisa2026-tests/Lib"
+      ]
+    },
+    {
+      "type": "Relationship",
+      "spdxId": "https://spdx.org/spdxdocs/cisa2026-tests/Rel-app-lic",
+      "creationInfo": "_:ci",
+      "relationshipType": "hasDeclaredLicense",
+      "from": "https://spdx.org/spdxdocs/cisa2026-tests/App",
+      "to": [
+        "https://spdx.org/spdxdocs/cisa2026-tests/MIT"
+      ]
+    },
+    {
+      "type": "Relationship",
+      "spdxId": "https://spdx.org/spdxdocs/cisa2026-tests/Rel-lib-lic",
+      "creationInfo": "_:ci",
+      "relationshipType": "hasDeclaredLicense",
+      "from": "https://spdx.org/spdxdocs/cisa2026-tests/Lib",
+      "to": [
+        "https://spdx.org/spdxdocs/cisa2026-tests/MIT"
+      ]
+    },
+    {
+      "type": "simplelicensing_LicenseExpression",
+      "spdxId": "https://spdx.org/spdxdocs/cisa2026-tests/MIT",
+      "creationInfo": "_:ci",
+      "simplelicensing_licenseExpression": "MIT"
+    }
+  ]
+}

@@ -20,7 +20,8 @@
         "https://example.com/spdx/file-01",
         "https://example.com/spdx/license-01",
         "https://example.com/spdx/rel-01",
-        "https://example.com/spdx/rel-02"
+        "https://example.com/spdx/rel-02",
+        "https://example.com/spdx/rel-deps"
       ]
     },
     {
@@ -80,6 +81,15 @@
       "from": "https://example.com/spdx/package-01",
       "relationshipType": "hasConcludedLicense",
       "to": ["https://example.com/spdx/license-01"],
+      "completeness": "complete"
+    },
+    {
+      "type": "LifecycleScopedRelationship",
+      "spdxId": "https://example.com/spdx/rel-deps",
+      "creationInfo": "_:creationinfo",
+      "from": "https://example.com/spdx/package-01",
+      "relationshipType": "dependsOn",
+      "to": ["NoneElement"],
       "completeness": "complete"
     }
   ]

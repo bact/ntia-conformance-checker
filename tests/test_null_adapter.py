@@ -39,3 +39,26 @@ def test_failed_parse_uses_null_adapter(tmp_path: Path, sbom_spec: str) -> None:
 
     assert isinstance(checker.adapter, NullAdapter)
     assert {name: getattr(checker, name)() for name in DEFAULTS} == DEFAULTS
+
+
+@pytest.mark.parametrize(
+    ("method", "args"),
+    [
+        ("get_components_without_properties", ("component", ("name",), set())),
+        ("get_components_without_hash", ("component", (), set())),
+        (
+            "get_components_without_relationships",
+            ("component", ("dependsOn",), "from", set()),
+        ),
+    ],
+    ids=["properties", "hash", "relationships"],
+)
+def test_kind_scoped_checks_need_an_spdx3_adapter(
+    method: str, args: tuple[object, ...]
+) -> None:
+    """Only the SPDX 3 adapter reads components of a kind; others refuse."""
+    adapter = NullAdapter()
+    assert adapter.has_components_of_kind("component", None) is False
+    assert adapter.system_stand_in(set()) is None
+    with pytest.raises(ValueError, match="cannot check"):
+        getattr(adapter, method)(*args)

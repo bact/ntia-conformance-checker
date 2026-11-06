@@ -23,13 +23,28 @@ It supports SPDX specification versions 2.2, 2.3, and 3.0.
 A web-based version of the tool is available (no installation needed) at:
 <https://tools.spdx.org/app/ntia_checker/>
 
+## Exit codes
+
+`sbomcheck` exits with 0 when the SBOM conforms. It exits with 1 when the SBOM
+does not conform, and also when the file cannot be read or parsed (the report
+then says so: every rule is `missing` and `executionSuccessful` is false in the
+SARIF). It exits with 2 for a usage error, an undeclared maturity level, or a
+report file that could not be written. When the SPDX version of the file cannot
+be determined, no SARIF file is written.
+
 ## Conformance
 
 Currently, the supported specifications are:
 
 - [2021 NTIA SBOM Minimum Elements][ntia]
 - [2024 CISA Framing Software Component Transparency (FSCT3) (minimum expected)][fsct3]
-- [2025 BSI TR-03183-2 v2.1.0 content requirements][bsi]
+  (see [what is checked](ntia_conformance_checker/rules/fsct3.md))
+- [G7 SBOM for AI: Minimum Elements][g7ai] (partial; SPDX 3 only, see
+  [what is checked](ntia_conformance_checker/rules/g7ai.md))
+- [2026 CISA SBOM Minimum Elements][cisa2026] (partial; SPDX 3 only, see
+  [what is checked](ntia_conformance_checker/rules/cisa2026.md))
+- [2025 BSI TR-03183-2 v2.1.0 content requirements][bsi] (SPDX 3 only, see
+  [what is checked](ntia_conformance_checker/rules/bsi.md))
 
 The minimum elements include:
 
@@ -41,6 +56,11 @@ The minimum elements include:
 - Author of SBOM Data
 - Timestamp
 
+On SPDX 3, a component's unique identifier is a package URL, a content
+identifier, or an external identifier of type packageUrl, cpe22, cpe23, swid,
+swhid or gitoid; the `spdxId` every element has does not count. On SPDX 2 it
+is the SPDXID.
+
 As defined by the NTIA, the minimum elements are
 "the essential pieces that support basic SBOM functionality and will serve as
 the foundation for an evolving approach to software transparency."
@@ -51,11 +71,15 @@ FSCT3 requires these Baseline Attributes as part of its "minimum expected":
 - License
 - Copyright Holder (inside Copyright Notice)
 
-BSI TR-03183-2 introduces stricter requirements for component files and relationships, including:
-- SHA-512 Hashes for deployable components
-- Structured component properties (e.g., container, firmware)
-- Strict concluded licensing targets
-- Explicit dependency completeness definitions
+BSI TR-03183-2 introduces stricter requirements for component files and
+relationships, including:
+
+- An email address or URL for the SBOM creator and each component creator
+- The filename and a SHA-512 hash of each deployable component
+- The structured property (`container` or `firmware`)
+- A dependency list with an explicit completeness for each component
+- Source code and deployable form URIs, other identifiers and original
+  licenses where they exist
 
 Mappings:
 
@@ -68,13 +92,19 @@ Mappings:
   Sub-WG, presented at SPDX General Meeting 2024-12-05.
 
 > [!NOTE]
-> ### BSI TR-03183-2 Implementation Notes
-> To ensure strict compatibility with the official SPDX 3.0.1 specification, this checker adapts two of the examples provided in the BSI TR-03183-2 v2.1.0 document:
-> 
-> * **Deployable URIs:** `binaryArtifact` is evaluated strictly as an `ExternalRefType` inside an `externalRef` array (rather than a direct property of `software_File`).
-> * **Source Code URIs:** Artifacts must be defined using concrete subclasses (e.g., `software_File`, `software_Package`, `software_Snippet`) instead of the abstract `software_SoftwareArtifact` class.
-> 
-> For full technical details regarding these design decisions, please refer to [PR #428](https://github.com/spdx/ntia-conformance-checker/pull/428).
+> ### BSI TR-03183-2 implementation notes
+>
+> The BSI rules read the SPDX 3.0.1 fields of the requirements ontology's
+> mapping and, where it has none, the SPDX 3.0.1 shape of the TR's own
+> Appendix 8.2, adapted to the SPDX 3.0.1 specification:
+>
+> - **Deployable URIs:** `binaryArtifact` is read as an `ExternalRefType` inside
+>   an `externalRef` array (rather than a direct property of `software_File`).
+> - **Source code URIs:** the checker reads an `externalRef` of type `vcs` on
+>   the component. The abstract `software_SoftwareArtifact` class of the TR's
+>   example cannot be parsed; use a concrete subclass such as `software_File`.
+>
+> See [what is checked](ntia_conformance_checker/rules/bsi.md).
 
 ## Installation
 
@@ -106,7 +136,12 @@ or create separate environments for testing with different Python versions.
 ## CLI usage
 
 ```text
-usage: sbomcheck [OPTIONS] PATH
+usage: sbomcheck [-h] [-s {spdx2,spdx3}]
+                 [-c {bsi,cisa2026,fsct3,fsct3-min,g7ai,ntia}] [-m LEVEL] [-k]
+                 [-r TYPE] [-o PATH] [-v] [--debug] [-q] [-V]
+                 [PATH]
+
+Check if an SPDX SBOM complies with a compliance standard.
 
 positional arguments:
   PATH                  Filepath for SBOM input
@@ -114,16 +149,22 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -s, --sbom-spec {spdx2,spdx3}
-                        SBOM specification of the input file; see below for details [default: spdx2]
-  -c, --comply {bsi,fsct3-min,ntia}
-                        Compliance standards to check against; see below for details [default: ntia]
+                        SBOM specification of the input file; see below for
+                        details [default: spdx2]
+  -c, --comply {bsi,cisa2026,fsct3,fsct3-min,g7ai,ntia}
+                        Compliance standards to check against; see below for
+                        details [default: ntia]
+  -m, --mature LEVEL    Maturity level to check against; 0 is the baseline and
+                        higher levels add requirements [default: 0]
   -k, --skip-validation
                         Skip validation
-  -r, --output TYPE     Report output type; see below for details [default: print]
+  -r, --output TYPE     Report output type; see below for details [default:
+                        print]
   -o, --output-file PATH
-                        Filepath for report output; if omitted, prints to console
-  -v, --verbose         Increase log verbosity to info
-  -vv, --debug          Increase log verbosity to debug
+                        Filepath for report output; if omitted, prints to
+                        console
+  -v, --verbose         Increase log verbosity: -v = info, -vv = debug
+  --debug               Set log verbosity to debug (same as -vv)
   -q, --quiet           Quiet logs: show errors only
   -V, --version         Display version of sbomcheck
 
@@ -133,8 +174,11 @@ choices:
     spdx3       System Package Data Exchange (SPDX) 3.x
 
   Compliance standards (for --comply):
-    bsi         BSI TR-03183-2 v2.1.0 content requirements
-    fsct3-min   2024 CISA Framing Software Component Transparency (minimum expected)
+    bsi         BSI TR-03183-2 v2.1.0 SBOM content requirements
+    cisa2026    CISA 2026 Minimum Elements for a Software Bill of Materials (SBOM)
+    fsct3       2024 CISA Framing Software Component Transparency (minimum expectation)
+    fsct3-min   2024 CISA Framing Software Component Transparency (minimum expectation) (deprecated; use fsct3)
+    g7ai        G7 2026 SBOM for AI Minimum Elements
     ntia        2021 NTIA SBOM Minimum Elements
 
   Report output types (for --output):
@@ -142,10 +186,12 @@ choices:
     json        Report in JSON format
     none        No report
     print       Report in regular text format
+    sarif       Report in SARIF format
+    sarif-sbom  SARIF format with the input SBOM embedded
 
 Examples:
   sbomcheck sbom.spdx
-  sbomcheck -s spdx3 -c fsct3-min -v sbom.json
+  sbomcheck -s spdx3 -c fsct3 -v sbom.json
   sbomcheck sbom.yaml --output json --output-file report.json
 ```
 
@@ -182,8 +228,23 @@ from ntia_conformance_checker import SbomChecker
 
 sbom_checker = SbomChecker("SBOM_filepath")
 
-print(sbom_checker.compliant)
+print(sbom_checker.check_compliance())
 ```
+
+`check_compliance(maturity=0)` takes the maturity level to check against
+(`0` is the baseline; `ValueError` if the standard does not declare the level).
+The `compliant` attribute still works but is deprecated;
+use `check_compliance()` instead.
+
+### Rules
+
+Every standard is defined declaratively in a file of
+[`rules/`](ntia_conformance_checker/rules/): `ntia.yaml`, `fsct3.yaml`,
+`cisa2026.yaml`, `g7ai.yaml` and `bsi.yaml`. Each rule carries the question
+shown in the report table and the message shown when the requirement is not
+met.
+See [`rules/_example.yaml`](ntia_conformance_checker/rules/_example.yaml)
+for the format.
 
 See the API documentation at:
 <https://spdx.github.io/ntia-conformance-checker/>
@@ -264,6 +325,7 @@ Check out the [frequently asked questions](./FAQ.md) document.
 [ntia]: https://www.ntia.gov/report/2021/minimum-elements-software-bill-materials-sbom
 [ntia-spdx23]: https://spdx.github.io/spdx-spec/v2.3/how-to-use/#k22-mapping-ntia-minimum-elements-to-spdx-fields
 [fsct3]: https://www.cisa.gov/resources-tools/resources/framing-software-component-transparency-2024
-[bsi]: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03183/BSI-TR-03183-2_v2_1_0.html
+[cisa2026]: https://www.cisa.gov/sites/default/files/2026-07/2026_cisa_sbom_minimum_elements_508c.pdf
+[g7ai]: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/KI/SBOM-for-AI_minimum-elements.pdf
 [sbom-reqs]: https://drive.google.com/file/d/14HZGYD7pSSWEmtaHZzWrzPhxCXaCnloJ/view
 [pypi]: https://pypi.org/project/ntia-conformance-checker/

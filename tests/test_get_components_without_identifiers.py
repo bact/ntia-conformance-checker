@@ -6,61 +6,74 @@
 
 # pylint: disable=missing-function-docstring,import-error,consider-using-from-import
 
-from datetime import datetime, timezone
+from typing import Any
 from unittest.mock import MagicMock
 
+import pytest
 from spdx_python_model.bindings import v3_0_1 as spdx3
 
 import ntia_conformance_checker.sbom_checker as sbom_checker
 from ntia_conformance_checker.adapters import Spdx2Adapter, Spdx3Adapter
 
+_ID = "http://example.com/spdx3/pkg"
+_TYPES = spdx3.ExternalIdentifierType.NAMED_INDIVIDUALS
 
-def test_get_components_without_identifiers_spdx3() -> None:
-    """Test get_components_without_identifiers with SPDX 3 object sets."""
-    creation_info = spdx3.CreationInfo(
-        _id="http://example.com/spdx3/creation-info",
-        specVersion="3.0.1",
-        created=datetime.now(timezone.utc),
-        createdBy=["http://example.com/spdx3/actor1"],
-        createdUsing=["http://example.com/spdx3/tool1"],
-    )
 
-    doc_set = spdx3.SHACLObjectSet()
-    pkg_valid = spdx3.software_Package(
-        _id="http://example.com/spdx3/pkg-valid",
-        creationInfo=creation_info,
-        name="pkg-valid",
-    )
-    doc_set.add(pkg_valid)
-
-    # Non-package element that should not be evaluated as a component
-    agent = spdx3.Agent(
-        _id="http://example.com/spdx3/agent1",
-        creationInfo=creation_info,
-        name="agent1",
-    )
-    doc_set.add(agent)
-
-    checker = sbom_checker.SbomChecker("", validate=False, sbom_spec="spdx3")
-    checker.doc = doc_set
-    checker.reachable_component_ids = {
-        "http://example.com/spdx3/pkg-valid",
-        "http://example.com/spdx3/agent1",
+def _external(kind: str, value: str = "x") -> dict[str, Any]:
+    return {
+        "externalIdentifier": [
+            spdx3.ExternalIdentifier(
+                externalIdentifierType=_TYPES[kind], identifier=value
+            )
+        ]
     }
-    checker.adapter = Spdx3Adapter(doc_set, None)
 
-    # All packages have valid identifiers
-    assert checker.get_components_without_identifiers() == []
 
-    # Package with empty identifier
-    pkg_no_id = MagicMock(spec=spdx3.software_Package)
-    pkg_no_id.name = "pkg-no-id"
-    pkg_no_id.spdxId = ""
-    doc_set.add(pkg_no_id)
-    # reachable_component_ids does NOT contain empty id
-    checker.reachable_component_ids = {"http://example.com/spdx3/pkg-valid"}
+@pytest.mark.parametrize(
+    ("props", "missing"),
+    [
+        ({}, True),  # the spdxId every element has does not count
+        ({"software_packageUrl": "pkg:pypi/a@1"}, False),
+        ({"software_packageUrl": "  "}, True),
+        ({"software_packageUrl": "NOASSERTION"}, True),
+        (
+            {
+                "software_contentIdentifier": [
+                    spdx3.software_ContentIdentifier(
+                        software_contentIdentifierType=(
+                            spdx3.software_ContentIdentifierType.gitoid
+                        ),
+                        software_contentIdentifierValue="gitoid:blob:sha1:" + "a" * 40,
+                    )
+                ]
+            },
+            False,
+        ),
+        *[
+            (_external(kind), False)
+            for kind in ("packageUrl", "cpe22", "cpe23", "swid", "swhid", "gitoid")
+        ],
+        (_external("packageUrl", " "), True),
+        *[(_external(kind), True) for kind in ("urlScheme", "email", "cve", "other")],
+    ],
+    ids=lambda v: v if isinstance(v, bool) else "-".join(map(str, v)) or "spdxId",
+)
+def test_get_components_without_identifiers_spdx3(
+    props: dict[str, Any], missing: bool
+) -> None:
+    """A package needs a package URL, a content identifier or an identifying
+    external identifier; a urlScheme names a resource, not the component."""
+    doc_set = spdx3.SHACLObjectSet()
+    doc_set.add(spdx3.software_Package(_id=_ID, name="pkg", **props))
+    doc_set.add(spdx3.Agent(_id="http://example.com/spdx3/agent1", name="agent1"))
+    adapter = Spdx3Adapter(doc_set, None)
 
-    assert checker.get_components_without_identifiers() == [("pkg-no-id", "")]
+    reachable = {_ID, "http://example.com/spdx3/agent1"}
+    assert adapter.get_components_without_identifiers(reachable) == (
+        [("pkg", _ID)] if missing else []
+    )
+    # A package not reachable from the root is not evaluated.
+    assert adapter.get_components_without_identifiers(set()) == []
 
 
 def test_get_components_without_identifiers_spdx2() -> None:

@@ -1,0 +1,281 @@
+# SPDX-FileContributor: Arthit Suriyawongkul
+# SPDX-FileCopyrightText: 2026-present SPDX contributors
+# SPDX-FileType: SOURCE
+# SPDX-License-Identifier: Apache-2.0
+
+# CISA 2026 Minimum Elements for a Software Bill of Materials (SBOM), v2.1.
+#
+# Rule ids, labels and provisions follow the SBOM requirements ontology
+# https://bact.github.io/bom/req/cisa2026/; the SPDX 3.0.1 fields follow
+# https://bact.github.io/bom/mapping/cisa2026-to-spdx30.sssom.tsv.
+# An element whose SPDX 3.0.1 mapping is exact, or whose carrier the checker can
+# read directly, is checked; the hash rules read a Hash in verifiedUsing.
+# Where the mapping is only close (format name and generation context), the
+# rule is checked as "the carrier is present" and says so in cisa2026.md. An
+# element with no usable carrier (signature, tool version, SBOM version) and
+# every Practices and Processes element (how SBOMs are run, not what one holds)
+# is catalogue-only: listed, never checked.
+# Source: https://www.cisa.gov/sites/default/files/2026-07/2026_cisa_sbom_minimum_elements_508c.pdf
+
+spec:
+  id: cisa2026
+  rule_prefix: BOM-CISA2026
+  title: CISA 2026 Minimum Elements for a Software Bill of Materials (SBOM)
+  uri: https://www.cisa.gov/sites/default/files/2026-07/2026_cisa_sbom_minimum_elements_508c.pdf
+  sbom_specs: [spdx3]
+  taxonomies:
+    category: cisa2026-minimum-elements
+
+categories:
+  - id: sbom-metadata
+    code: META
+    title: SBOM Metadata
+  - id: component-data
+    code: COMP
+    title: Component Data
+  - id: practices-and-processes
+    code: PP
+    title: Practices and Processes
+
+rules:
+
+  - number: 1
+    slug: cisa2026-sbom-author-missing
+    spec_category: sbom-metadata
+    element_id: author
+    element_description: "SBOM author"
+    competency_question: "SBOM author provided?"
+    warning: "SBOM author is missing."
+    provision: requirement
+    probe:
+      name: require_document_attribute
+      params: {"attribute": "author"}
+
+  - number: 2
+    slug: cisa2026-sbom-author-signature-missing
+    spec_category: sbom-metadata
+    element_description: "SBOM author signature"
+    competency_question: "SBOM author signature provided?"
+    warning: "SBOM author signature is missing."
+    provision: requirement
+    status: catalogue-only
+
+  - number: 3
+    slug: cisa2026-sbom-data-format-name-missing
+    spec_category: sbom-metadata
+    element_id: spec_version
+    element_description: "SBOM data format name"
+    competency_question: "SBOM data format name provided?"
+    warning: "SBOM data format name is missing."
+    provision: requirement
+    probe:
+      name: require_document_attribute
+      params: {"attribute": "spec_version"}
+
+  - number: 4
+    slug: cisa2026-sbom-data-format-version-missing
+    spec_category: sbom-metadata
+    element_id: spec_version
+    element_description: "SBOM data format version"
+    competency_question: "SBOM data format version provided?"
+    warning: "SBOM data format version is missing."
+    provision: requirement
+    probe:
+      name: require_document_attribute
+      params: {"attribute": "spec_version"}
+
+  - number: 5
+    slug: cisa2026-sbom-generation-context-missing
+    spec_category: sbom-metadata
+    element_id: sbom_type
+    element_description: "SBOM generation context"
+    competency_question: "SBOM generation context provided?"
+    warning: "SBOM generation context is missing."
+    provision: requirement
+    probe:
+      name: require_document_attribute
+      params: {"attribute": "sbom_type"}
+
+  - number: 6
+    slug: cisa2026-sbom-timestamp-missing
+    spec_category: sbom-metadata
+    element_id: timestamp
+    element_description: "SBOM timestamp"
+    competency_question: "SBOM timestamp provided?"
+    warning: "SBOM timestamp is missing."
+    provision: requirement
+    probe:
+      name: require_document_attribute
+      params: {"attribute": "timestamp"}
+
+  - number: 7
+    slug: cisa2026-sbom-tool-name-missing
+    spec_category: sbom-metadata
+    element_description: "SBOM tool name"
+    competency_question: "SBOM tool name provided?"
+    warning: "SBOM tool name is missing."
+    provision: requirement
+    probe:
+      name: require_document_property
+      params: {"properties": ["createdUsing"]}
+
+  - number: 8
+    slug: cisa2026-sbom-tool-version-missing
+    spec_category: sbom-metadata
+    element_description: "SBOM tool version"
+    competency_question: "SBOM tool version provided?"
+    warning: "SBOM tool version is missing."
+    provision: requirement
+    status: catalogue-only
+
+  - number: 9
+    slug: cisa2026-sbom-version-missing
+    spec_category: sbom-metadata
+    element_description: "SBOM version"
+    competency_question: "SBOM version provided?"
+    warning: "SBOM version is missing."
+    provision: requirement
+    status: catalogue-only
+
+  - number: 1
+    slug: cisa2026-component-producer-missing
+    spec_category: component-data
+    element_description: "component producer"
+    competency_question: "Component producer provided?"
+    warning: "Component producer is missing."
+    provision: requirement
+    probe:
+      name: require_property
+      params: {"kind": "component", "properties": ["originatedBy"]}
+
+  - number: 2
+    slug: cisa2026-component-dependency-relationship-missing
+    spec_category: component-data
+    element_id: dependency_relationship
+    element_description: "component dependency relationship"
+    competency_question: "Component dependency relationship provided?"
+    warning: "Component dependency relationship is missing."
+    provision: requirement
+    probe:
+      name: require_document_attribute
+      params: {"attribute": "dependency_relationship"}
+
+  - number: 3
+    slug: cisa2026-component-hash-value-missing
+    spec_category: component-data
+    element_description: "component hash value"
+    competency_question: "Component hash value provided?"
+    warning: "Component hash value is missing."
+    provision: requirement
+    probe:
+      name: require_hash
+      params: {"kind": "component"}
+
+  - number: 4
+    slug: cisa2026-component-hash-algorithm-missing
+    spec_category: component-data
+    element_description: "component hash algorithm"
+    competency_question: "Component hash algorithm provided?"
+    warning: "Component hash algorithm is missing."
+    provision: requirement
+    probe:
+      name: require_hash
+      params: {"kind": "component"}
+
+  - number: 5
+    slug: cisa2026-component-identifiers-missing
+    spec_category: component-data
+    element_description: "component identifiers"
+    competency_question: "Component identifiers provided?"
+    warning: "Component identifiers are missing."
+    provision: requirement
+    probe:
+      name: require_property
+      params: {"kind": "component", "properties": ["software_packageUrl", "externalIdentifier", "software_contentIdentifier"]}
+
+  - number: 6
+    slug: cisa2026-component-license-missing
+    spec_category: component-data
+    element_description: "component license"
+    competency_question: "Component license provided?"
+    warning: "Component license is missing."
+    provision: requirement
+    probe:
+      name: require_relationship
+      params: {"kind": "component", "relationships": ["hasDeclaredLicense"]}
+
+  - number: 7
+    slug: cisa2026-component-name-missing
+    spec_category: component-data
+    element_description: "component name"
+    competency_question: "Component name provided?"
+    warning: "Component name is missing."
+    provision: requirement
+    probe:
+      name: require_property
+      params: {"kind": "component", "properties": ["name"]}
+
+  - number: 8
+    slug: cisa2026-component-version-missing
+    spec_category: component-data
+    element_description: "component version"
+    competency_question: "Component version provided?"
+    warning: "Component version is missing."
+    provision: requirement
+    probe:
+      name: require_property
+      params: {"kind": "component", "properties": ["software_packageVersion"]}
+
+  - number: 1
+    slug: cisa2026-accommodation-of-updates-missing
+    spec_category: practices-and-processes
+    element_description: "accommodation of updates to SBOM data"
+    competency_question: "Accommodation of updates to SBOM data provided?"
+    warning: "Accommodation of updates to SBOM data is missing."
+    provision: recommendation
+    status: catalogue-only
+
+  - number: 2
+    slug: cisa2026-coverage-missing
+    spec_category: practices-and-processes
+    element_description: "coverage"
+    competency_question: "Coverage provided?"
+    warning: "Coverage is missing."
+    provision: recommendation
+    status: catalogue-only
+
+  - number: 3
+    slug: cisa2026-distribution-and-delivery-missing
+    spec_category: practices-and-processes
+    element_description: "distribution and delivery"
+    competency_question: "Distribution and delivery provided?"
+    warning: "Distribution and delivery is missing."
+    provision: recommendation
+    status: catalogue-only
+
+  - number: 4
+    slug: cisa2026-explicitly-identifying-unknown-information-missing
+    spec_category: practices-and-processes
+    element_description: "explicit identification of unknown information"
+    competency_question: "Explicit identification of unknown information provided?"
+    warning: "Explicit identification of unknown information is missing."
+    provision: recommendation
+    status: catalogue-only
+
+  - number: 5
+    slug: cisa2026-frequency-missing
+    spec_category: practices-and-processes
+    element_description: "frequency"
+    competency_question: "Frequency provided?"
+    warning: "Frequency is missing."
+    provision: recommendation
+    status: catalogue-only
+
+  - number: 6
+    slug: cisa2026-machine-processable-data-missing
+    spec_category: practices-and-processes
+    element_description: "machine-processable data"
+    competency_question: "Machine-processable data provided?"
+    warning: "Machine-processable data is missing."
+    provision: recommendation
+    status: catalogue-only
