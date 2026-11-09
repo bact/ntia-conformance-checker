@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Changed
 
+- SPDX 3 unique identifier (NTIA, FSCT3): a reachable package needs a package
+  URL, a content identifier or an external identifier of type packageUrl,
+  cpe22, cpe23, swid, swhid or gitoid; the bare `spdxId` every element has no
+  longer counts, so an SBOM that relied on it now reports the package as
+  missing an identifier
 - Pull request and release builds embed the SBOM with Pitloom 0.20.1 and fail
   on an invalid SBOM; content types are detected with magika
 - Releases publish to PyPI only after the SBOM is validated; release files are
