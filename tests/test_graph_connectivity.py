@@ -805,3 +805,32 @@ def test_missing_source_is_reported_end_to_end(tmp_path: Path) -> None:
         "Missing element '<b>SPDXRef-Ghost1</b>' links to missing element "
         "'<b>SPDXRef-Ghost2</b>'" in sbom.output_html()
     )
+
+
+@pytest.mark.parametrize(
+    ("file_path", "reachable"),
+    [
+        (
+            Path("reverse_relationship") / "issue481_build_dependency_of.spdx",
+            {"SPDXRef-Package-App", "SPDXRef-Package-Tool"},
+        ),
+        (
+            Path("external_document_ref") / "issue482_external_document_ref.spdx",
+            {"SPDXRef-Package-App"},
+        ),
+    ],
+    ids=["issue-481", "issue-482"],
+)
+def test_reported_issue_sboms(
+    caplog: pytest.LogCaptureFixture, file_path: Path, reachable: set[str]
+) -> None:
+    """The tag-value SBOMs from issues #481 and #482 have no graph problems."""
+    test_file = Path(__file__).parent / "data" / "graph_connectivity" / file_path
+    sbom = sbom_checker.SbomChecker(str(test_file), sbom_spec="spdx2")
+    assert not sbom.parsing_errors
+    assert sbom.reachable_component_ids == reachable
+    assert sbom.floating_component_ids == set()
+    assert sbom.has_unknown_pointers is False
+    assert not sbom.unknown_pointer_edges
+    assert "floating" not in caplog.text
+    assert "missing element" not in caplog.text
