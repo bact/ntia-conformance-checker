@@ -35,10 +35,8 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Added
 
-- When both ends of a relationship are missing, the report names the source
-  a missing element: "Missing element 'A' links to missing element 'B'",
-  instead of "Component 'A' ..."; the JSON output lists every missing element
-  in `graphValidation.unknownPointers.missingElementIds`
+- The JSON output lists every missing element in
+  `graphValidation.unknownPointers.missingElementIds`
 - `graph_utils.analyze_graph` returns a `GraphConnectivity` result that also
   holds the missing element IDs; `BaseChecker.missing_element_ids` holds them
   after a check
@@ -57,16 +55,26 @@ and this project adheres to [Semantic Versioning][semver].
   `GENERATES` relationships, now connect elements to the relationship graph:
   from the product to the tool or the source
 - SPDX 2 relationship types are followed in the direction derived from their
-  SPDX 3 translation in SPDX 3.0 Annex A.1, so the same SBOM gives the same
-  result in SPDX 2 and SPDX 3; `SPDX2_RELATIONSHIP_TRAVERSAL` and
+  SPDX 3 translation in SPDX 3.0 Annex A.1, so the same relationships connect
+  the same elements in SPDX 2 and SPDX 3, apart from the documented overrides
+  for `DESCRIBES`, `DESCRIBED_BY` and `DYNAMIC_LINK`;
+  `SPDX2_RELATIONSHIP_TRAVERSAL` and
   `SPDX3_RELATIONSHIP_TRAVERSAL` in `constants.py` hold the direction of each
   type
 - SPDX 2 `DESCRIBES` and `DESCRIBED_BY` between elements other than the
   document both connect the described element
 - A relationship that the checker follows is now checked for a missing
   element at both ends, in SPDX 2 (`spdxElementId`) and SPDX 3 (`from`), and
-  a missing root is reported; a missing element is listed once per element
-  that links to it
+  a missing root is reported
+- A link to a missing element is reported as written, from source to target,
+  with each end labeled: "Element 'A' links to missing element 'B'",
+  "Missing element 'A' links to element 'B'" or "Missing element 'A' links to
+  missing element 'B'", instead of "Component 'A' links to missing element
+  'B'"; `unknownPointerEdges` and `unknown_pointer_edges` likewise map each
+  source to its targets as written, each link once
+- An SPDX 2 element in an external document must be written as
+  `DocumentRef-<id>:SPDXRef-<idstring>` (SPDX 2.3 clause 11.1, Table 69);
+  other forms are reported as missing
 - `get_reachable_nodes` returns its connection map in traversal direction,
   from parent to child, so a reverse relationship such as `A CONTAINED_BY B`
   is an edge from B to A

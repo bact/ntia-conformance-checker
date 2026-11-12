@@ -103,8 +103,9 @@ SPDX 2.3 does not say that one relationship type is the inverse of another,
 or which end is the parent. The checker derives each SPDX 2 type from its
 SPDX 3 translation in Annex A.1. An SPDX 2 type is followed if its SPDX 3 type
 is followed. Its direction is the SPDX 3 direction, reversed when Annex A.1
-says "Swap to and from? Y". The same SBOM in SPDX 2 and in SPDX 3 gives the
-same result. For example:
+says "Swap to and from? Y". The same relationships in SPDX 2 and in SPDX 3
+connect the same elements, except where the overrides below apply.
+For example:
 
 - Table 68 says "SPDXRef-A is a build dependency of SPDXRef-B" for
   `A BUILD_DEPENDENCY_OF B`. Annex A.1 translates it to `B dependsOn A`, with
@@ -146,28 +147,33 @@ format of an SPDX 2 relationship as:
 ```
 
 An element ID can be at either end, so either end can be missing. The checker
-reads relationships as written, from A to B, whatever the traversal direction,
-and checks the same things for SPDX 2 and SPDX 3:
+checks the roots and the relationships that it follows, at both ends, the same
+way for SPDX 2 and SPDX 3. The roots differ, as described above: in SPDX 3,
+every relationship from the `SpdxDocument` gives roots, so it is checked
+whatever its type. Each broken link is reported as written, from A to B,
+whatever the traversal direction, and each end is labeled "missing element"
+or "element":
 
 <!-- markdownlint-disable MD013 -->
 
 | Case | Reported as missing | Report line or reason |
 | --- | --- | --- |
-| Followed relationship `A <type> B`, B missing | Yes | "Component 'A' links to missing element 'B'" |
-| Followed relationship `A <type> B`, only A missing | Yes | "Component 'B' links to missing element 'A'" |
+| Followed relationship `A <type> B`, B missing | Yes | "Element 'A' links to missing element 'B'" |
+| Followed relationship `A <type> B`, A missing | Yes | "Missing element 'A' links to element 'B'" |
 | Followed relationship `A <type> B`, both missing | Yes | "Missing element 'A' links to missing element 'B'" |
-| Root missing | Yes | "Component '\<document or collection\>' links to missing element '\<root\>'" |
-| Relationship that the checker does not follow | No | Not checked |
+| Root missing | Yes | "Element '\<document or collection\>' links to missing element '\<root\>'" |
+| SPDX 2 `A DESCRIBED_BY SPDXRef-DOCUMENT`, A missing | Yes | "Missing element 'A' links to element 'SPDXRef-DOCUMENT'" |
+| Relationship that the checker does not follow, and is not a root | No | Not checked |
 | `NONE`, `NOASSERTION` (SPDX 2) | No | Not elements (Table 69) |
 | SPDX 3 individuals such as `NoneElement` | No | Defined by SPDX 3 |
 | SPDX 3 element in an `ExternalMap` of an `import` | No | Defined in another document |
-| `DocumentRef-<id>:SPDXID` with `DocumentRef-<id>` declared (SPDX 2) | No | Defined in the external document |
+| `DocumentRef-<id>:SPDXRef-<idstring>` with `DocumentRef-<id>` declared (SPDX 2) | No | Defined in the external document |
 | `DocumentRef-<id>:SPDXID` with `DocumentRef-<id>` not declared (SPDX 2) | Yes | No such external document |
-| Bare `DocumentRef-<id>` (SPDX 2) | Yes | Does not match the Table 69 format |
+| Bare `DocumentRef-<id>`, or `DocumentRef-<id>:` followed by anything but `SPDXRef-<idstring>` (SPDX 2) | Yes | Does not match the Table 69 format |
 
 <!-- markdownlint-enable MD013 -->
 
-Each missing element is reported once for each element that links to it.
+Each link is reported once, however often the SBOM repeats it.
 The JSON output also lists every missing element ID in
 `graphValidation.unknownPointers.missingElementIds`.
 

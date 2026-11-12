@@ -5,6 +5,7 @@
 """Graph utilities for SPDX 2 and SPDX 3."""
 
 import logging
+import re
 from collections import deque
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, cast
@@ -17,10 +18,15 @@ from .constants import (
     SPDX3_RELATIONSHIP_TRAVERSAL,
     TraversalDirection,
 )
-from .spdx3_utils import SPDX3_INDIVIDUAL_ELEMENT_IRIS
+from .spdx3_utils import SPDX3_INDIVIDUAL_ELEMENT_IRIS, get_spdx3_element_id
 
 if TYPE_CHECKING:
     from spdx_tools.spdx.model.document import Document
+
+
+# SPDX 2 element ID: "SPDXRef-"[idstring], where idstring has letters,
+# numbers, "." and "-" (SPDX 2.3 clauses 7.2, 8.2, 9.1).
+_SPDX2_SPDXID_PATTERN = re.compile(r"SPDXRef-[A-Za-z0-9.\-]+")
 
 
 def _get_spdx2_doc_id(spdx2_doc: "Document") -> str:
@@ -73,10 +79,16 @@ def _is_spdx2_external_element_id(
         external_doc_ref_ids: Declared external document reference IDs.
 
     Returns:
-        bool: True if the ID is ``<declared DocumentRef>:<SPDXID>``.
+        bool: True if the ID is ``<declared DocumentRef>:<SPDXID>``, where
+            SPDXID is ``SPDXRef-<idstring>`` and idstring has only letters,
+            numbers, "." and "-" (clause 7.2 and others).
     """
     doc_ref_id, separator, local_id = element_id.partition(":")
-    return bool(separator and local_id) and doc_ref_id in external_doc_ref_ids
+    return (
+        bool(separator)
+        and doc_ref_id in external_doc_ref_ids
+        and _SPDX2_SPDXID_PATTERN.fullmatch(local_id) is not None
+    )
 
 
 def _collect_spdx2_known_and_package_ids(
@@ -146,7 +158,7 @@ def _collect_spdx3_known_and_package_ids(
 
 def _find_unknown_pointer_edges(
     links: list[tuple[str, str]], is_known: Callable[[str], bool]
-) -> dict[str, list[str]]:
+) -> tuple[dict[str, list[str]], set[str]]:
     """
     Find links that have a missing element at either end.
 
@@ -154,35 +166,29 @@ def _find_unknown_pointer_edges(
     document: (source, target). SPDX 2.3 clause 11.1 (Table 69) allows an
     element ID at both ends of a relationship, so either end can be missing.
 
-    The result maps an element to the missing elements it is linked to:
-
-    - If the target is missing, the entry is source to target, whether the
-      source is known or not. If both are missing, the key is missing too.
-    - If only the source is missing, the entry is target to source, so that
-      the entry starts from the element that exists.
-
-    Each missing element is listed once per element.
+    Links are kept as written, from source to target, whichever end is
+    missing. The missing element IDs tell which end is missing.
 
     Args:
         links: (source ID, target ID) pairs as written.
         is_known: Whether an element ID refers to an element that exists.
 
     Returns:
-        dict[str, list[str]]: Element ID to the missing element IDs it is
-            linked to.
+        tuple: (unknown_pointer_edges, missing_element_ids), where
+            unknown_pointer_edges maps a source ID to its target IDs, each
+            listed once, for links with a missing end.
     """
-    unknown_pointer_edges: dict[str, list[str]] = {}
+    targets_by_source: dict[str, dict[str, None]] = {}
+    missing_element_ids: set[str] = set()
     for source_id, target_id in links:
-        if not is_known(target_id):
-            element_id, missing_id = source_id, target_id
-        elif not is_known(source_id):
-            element_id, missing_id = target_id, source_id
-        else:
-            continue
-        missing_ids = unknown_pointer_edges.setdefault(element_id, [])
-        if missing_id not in missing_ids:
-            missing_ids.append(missing_id)
-    return unknown_pointer_edges
+        missing_ends = {e for e in (source_id, target_id) if not is_known(e)}
+        if missing_ends:
+            missing_element_ids |= missing_ends
+            targets_by_source.setdefault(source_id, {})[target_id] = None
+    unknown_pointer_edges = {
+        source_id: list(targets) for source_id, targets in targets_by_source.items()
+    }
+    return unknown_pointer_edges, missing_element_ids
 
 
 def _get_known_predicate_and_package_ids(
@@ -224,11 +230,10 @@ class GraphConnectivity:
     Attributes:
         reachable_component_ids: Packages reachable from the roots.
         floating_component_ids: Packages not reachable from the roots.
-        unknown_pointer_edges: Element ID to the missing element IDs it is
-            linked to (see ``_find_unknown_pointer_edges``). A key is itself
-            missing when both ends of a link are missing.
-        missing_element_ids: IDs of all missing elements, keys and values of
-            ``unknown_pointer_edges`` alike.
+        unknown_pointer_edges: Links with a missing end, as written: source
+            ID to target IDs (see ``_find_unknown_pointer_edges``).
+        missing_element_ids: IDs of the missing elements, at either end of
+            those links.
     """
 
     reachable_component_ids: set[str] = field(default_factory=set)
@@ -264,13 +269,9 @@ def analyze_graph(
     is_known, all_package_ids = _get_known_predicate_and_package_ids(
         sbom_spec, parsed_data
     )
-    unknown_pointer_edges = _find_unknown_pointer_edges(links, is_known)
-    missing_element_ids = {
-        element_id
-        for source_id, target_ids in unknown_pointer_edges.items()
-        for element_id in (source_id, *target_ids)
-        if not is_known(element_id)
-    }
+    unknown_pointer_edges, missing_element_ids = _find_unknown_pointer_edges(
+        links, is_known
+    )
 
     reachable_component_ids = reachable_node_ids & all_package_ids
     result = GraphConnectivity(
@@ -301,8 +302,8 @@ def analyze_graph_connectivity(
     Returns:
         tuple: (reachable_component_ids, floating_component_ids,
             unknown_pointer_edges, has_unknown_pointers), where
-            unknown_pointer_edges maps an element to the missing elements it
-            is linked to (see ``_find_unknown_pointer_edges``).
+            unknown_pointer_edges maps a source ID to target IDs, for links
+            with a missing end, as written (see ``_find_unknown_pointer_edges``).
     """
     result = analyze_graph(sbom_spec, parsed_data, spdx3_doc)
     return (
@@ -376,14 +377,6 @@ def _build_spdx2_graph(
     return queue, graph_connection_map, links
 
 
-def _get_spdx3_id(value: Any) -> str:
-    """Return the SPDX ID of an SPDX 3 element or element reference, or ''."""
-    if isinstance(value, str):
-        return value
-    spdx_id = getattr(value, "spdxId", "")
-    return spdx_id if isinstance(spdx_id, str) else ""
-
-
 def _extract_spdx3_relationship_edges(
     obj: spdx3.Relationship,
     graph_connection_map: dict[str, list[str]],
@@ -408,11 +401,11 @@ def _extract_spdx3_relationship_edges(
     if direction is None:
         return
 
-    from_id = _get_spdx3_id(getattr(obj, "from_", None))
+    from_id = get_spdx3_element_id(getattr(obj, "from_", None))
     if not from_id:
         return
 
-    to_ids = [t for t in map(_get_spdx3_id, getattr(obj, "to", [])) if t]
+    to_ids = [t for t in map(get_spdx3_element_id, getattr(obj, "to", [])) if t]
 
     links.extend((from_id, to_id) for to_id in to_ids)
     if direction is TraversalDirection.FORWARD:
@@ -427,12 +420,20 @@ def _extract_spdx3_collection_edges(
     graph_connection_map: dict[str, list[str]],
     links: list[tuple[str, str]],
 ) -> None:
-    """Helper to extract implicit collection edges (e.g. Sbom, Document)."""
-    col_id = _get_spdx3_id(obj)
+    """
+    Helper to extract implicit collection edges (e.g. Sbom, Document).
+
+    ``graph_connection_map`` gets an edge from the collection to each of its
+    ``rootElement``. ``links`` gets the same (collection, root element) pairs,
+    to check for missing elements.
+    """
+    col_id = get_spdx3_element_id(obj)
     if not col_id:
         return
 
-    root_ids = [r for r in map(_get_spdx3_id, getattr(obj, "rootElement", [])) if r]
+    root_ids = [
+        r for r in map(get_spdx3_element_id, getattr(obj, "rootElement", [])) if r
+    ]
     graph_connection_map.setdefault(col_id, []).extend(root_ids)
     links.extend((col_id, root_id) for root_id in root_ids)
 
@@ -456,21 +457,23 @@ def _build_spdx3_graph(
     graph_connection_map: dict[str, list[str]] = {}
     links: list[tuple[str, str]] = []
 
-    doc_id = _get_spdx3_id(spdx3_doc) if spdx3_doc else ""
+    doc_id = get_spdx3_element_id(spdx3_doc) if spdx3_doc else ""
 
     if spdx3_doc and getattr(spdx3_doc, "rootElement", None):
-        queue.extend(r for r in map(_get_spdx3_id, spdx3_doc.rootElement) if r)
+        queue.extend(r for r in map(get_spdx3_element_id, spdx3_doc.rootElement) if r)
 
     # Build the graph connection map
     for obj in object_set.objects:
         # Capture explicit relationships from Relationship objects
         if isinstance(obj, spdx3.Relationship):
-            from_id = _get_spdx3_id(getattr(obj, "from_", None))
+            from_id = get_spdx3_element_id(getattr(obj, "from_", None))
 
             # If a relationship originates from the Document itself,
             # its targets are treated as Roots.
             if doc_id and from_id == doc_id:
-                to_ids = [t for t in map(_get_spdx3_id, getattr(obj, "to", [])) if t]
+                to_ids = [
+                    t for t in map(get_spdx3_element_id, getattr(obj, "to", [])) if t
+                ]
                 queue.extend(to_ids)
                 links.extend((doc_id, to_id) for to_id in to_ids)
 

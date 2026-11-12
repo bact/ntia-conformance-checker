@@ -7,6 +7,7 @@
 
 # pylint: disable=missing-function-docstring,import-error,consider-using-from-import
 
+import functools
 import json
 import os
 from pathlib import Path
@@ -310,7 +311,7 @@ def test_spdx2_relationship_is_followed_only_in_its_direction(
         ),
         (
             ("SPDXRef-Missing", RelationshipType.DEPENDENCY_OF, "SPDXRef-A"),
-            {"SPDXRef-A": ["SPDXRef-Missing"]},
+            {"SPDXRef-Missing": ["SPDXRef-A"]},
         ),
         (
             ("SPDXRef-A", RelationshipType.DEPENDS_ON, "SPDXRef-Missing"),
@@ -344,8 +345,18 @@ def test_spdx2_relationship_to_missing_element(
         ("DocumentRef-undeclared:SPDXRef-Package-B", True),
         ("DocumentRef-other", True),  # not ["DocumentRef-"[idstring]":"]SPDXID
         ("DocumentRef-other:", True),
+        ("DocumentRef-other:garbage", True),  # not "SPDXRef-"[idstring]
+        ("DocumentRef-other:SPDXRef-B:extra", True),
     ],
-    ids=["declared-element", "declared-document", "undeclared", "bare", "empty"],
+    ids=[
+        "declared-element",
+        "declared-document",
+        "undeclared",
+        "bare",
+        "empty",
+        "not-spdxid",
+        "extra-colon",
+    ],
 )
 def test_spdx2_external_document_ref_elements_are_known(
     target: str, unknown: bool
@@ -438,8 +449,8 @@ def test_annex_a1_table_and_traversal_use_spdx3_relationship_types() -> None:
         # Overrides
         ("DESCRIBES", TraversalDirection.FORWARD),
         ("DYNAMIC_LINK", TraversalDirection.FORWARD),
-        # Not followed
         ("DESCRIBED_BY", TraversalDirection.REVERSE),
+        # Not followed
         ("FILE_MODIFIED", None),
         ("OTHER", None),
     ],
@@ -461,11 +472,18 @@ def _spdx3_element_id(name: str) -> str:
     "ROOT" is the root package, "DOC" is the SpdxDocument and any other name
     is ``https://example.com/<name>``.
     """
+    return _spdx3_special_ids().get(name, f"https://example.com/{name}")
+
+
+@functools.cache
+def _spdx3_special_ids() -> dict[str, str]:
+    """Return the SPDX IDs of the root package and the SpdxDocument of the base SBOM."""
     graph = json.loads(_SPDX3_BASE_SBOM.read_text(encoding="utf-8"))["@graph"]
     types = {"ROOT": "dataset_DatasetPackage", "DOC": "SpdxDocument"}
-    if name in types:
-        return str(next(e for e in graph if e["type"] == types[name])["spdxId"])
-    return f"https://example.com/{name}"
+    return {
+        name: str(next(e for e in graph if e["type"] == type_name)["spdxId"])
+        for name, type_name in types.items()
+    }
 
 
 def _spdx3_checker_with(
@@ -555,11 +573,11 @@ def test_spdx3_uses_tool_and_generates_missing_element(
     [
         (
             ("SPDXRef-Missing", RelationshipType.CONTAINS, "SPDXRef-A"),
-            {"SPDXRef-A": ["SPDXRef-Missing"]},
+            {"SPDXRef-Missing": ["SPDXRef-A"]},
         ),
         (
             ("SPDXRef-Missing", RelationshipType.DESCRIBED_BY, "SPDXRef-DOCUMENT"),
-            {"SPDXRef-DOCUMENT": ["SPDXRef-Missing"]},
+            {"SPDXRef-Missing": ["SPDXRef-DOCUMENT"]},
         ),
         (
             ("SPDXRef-Missing1", RelationshipType.CONTAINS, "SPDXRef-Missing2"),
@@ -623,7 +641,7 @@ def test_spdx2_external_element_at_either_end(
     [
         (
             ("missing-a", "contains", "ROOT"),
-            {"ROOT": ["missing-a"]},
+            {"missing-a": ["ROOT"]},
         ),
         (
             ("missing-a", "generates", "missing-b"),

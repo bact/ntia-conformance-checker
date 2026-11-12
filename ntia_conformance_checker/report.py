@@ -19,6 +19,8 @@ from .constants import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from spdx_tools.spdx.validation.validation_message import ValidationMessage
 
     from .base_checker import BaseChecker
@@ -161,18 +163,24 @@ def get_validation_messages_json(
     return json_output
 
 
-def _link_source_label(rc: ReportContext, source: str) -> str:
+def _iter_missing_links(rc: ReportContext) -> Iterator[tuple[str, str, str, str]]:
     """
-    Return how to name the source of a link to a missing element.
+    Yield the links with a missing end, with a label for each end.
 
-    The source is "Missing element" when it is missing too, which happens when
-    both ends of a link are missing, and "Component" otherwise.
+    Links are as written, from source to target. An end is labeled
+    "missing element" if it is missing and "element" otherwise, so a line
+    reads, for example, "Element 'A' links to missing element 'B'".
+
+    Yields:
+        tuple: (source label, source ID, target label, target ID), with the
+            source label capitalized.
     """
-    return (
-        "Missing element"
-        if source in (rc.missing_element_ids or set())
-        else "Component"
-    )
+    missing_ids = rc.missing_element_ids or set()
+    for source, targets in (rc.unknown_pointer_edges or {}).items():
+        source_label = "Missing element" if source in missing_ids else "Element"
+        for target in targets:
+            target_label = "missing element" if target in missing_ids else "element"
+            yield source_label, source, target_label, target
 
 
 def _generate_graph_text_report(rc: ReportContext) -> list[str]:
@@ -192,12 +200,10 @@ def _generate_graph_text_report(rc: ReportContext) -> list[str]:
             "Unknown components detected! A relationship points to a missing element."
         )
         graph_issues_report.append("  -> Broken dependency linkages found:")
-        for source, targets in rc.unknown_pointer_edges.items():
-            for target in targets:
-                label = _link_source_label(rc, source)
-                graph_issues_report.append(
-                    f"    * {label} '{source}' links to missing element '{target}'"
-                )
+        for source_label, source, target_label, target in _iter_missing_links(rc):
+            graph_issues_report.append(
+                f"    * {source_label} '{source}' links to {target_label} '{target}'"
+            )
 
     if rc.floating_component_ids:
         floating_ids = sorted(rc.floating_component_ids)
@@ -337,13 +343,11 @@ def _generate_graph_html_report(rc: ReportContext) -> list[str]:
             " Unknown components detected! A relationship points to a missing element.</p>"
         )
         graph_issues_report.append("<ul class='conformance-err-list'>")
-        for source, targets in rc.unknown_pointer_edges.items():
-            for target in targets:
-                label = _link_source_label(rc, source)
-                graph_issues_report.append(
-                    f"<li>{label} '<b>{source}</b>' links to missing element "
-                    f"'<b>{target}</b>'</li>"
-                )
+        for source_label, source, target_label, target in _iter_missing_links(rc):
+            graph_issues_report.append(
+                f"<li>{source_label} '<b>{source}</b>' links to {target_label} "
+                f"'<b>{target}</b>'</li>"
+            )
         graph_issues_report.append("</ul>")
 
     if rc.floating_component_ids:
