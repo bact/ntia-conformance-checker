@@ -26,11 +26,13 @@ subclass, such as `software_File`, `software_Package`, or `software_Snippet`.
 elements." What does this mean?**
 
 A: The conformance checker traverses the SBOM's relationship graph starting
-from the root document. This warning means your file contains elements that
+from the root elements. This warning means your file contains packages that
 are not connected to the primary software tree via relationships.
-The checker safely ignores these floating elements during compliance
+The checker safely ignores these floating packages during compliance
 validation, but it is a sign that the tool which generated your SBOM may be
-leaving unlinked "garbage" data in the file.
+leaving unlinked "garbage" data in the file. Only packages (components) can
+be floating. Files, snippets and other elements are traversed, but are not
+reported as floating.
 
 **Q: Which relationships connect an element to the tree?**
 
@@ -38,68 +40,86 @@ A: References are to the [SPDX 2.3 specification][spdx-2.3], the
 [SPDX 3.0.1 `RelationshipType` vocabulary][spdx-3.0.1-reltype] and the SPDX 3.0
 [Annex A.1 "Relationship" translation table][spdx-3.0-a1].
 
-The checker follows relationships from parent to child, never from child to
-parent. The relationship graph is directed, so the checker keeps a traversal
-direction for each relationship type, as well as its name. A forward type is
-followed from its source (SPDX 2 `spdxElementId`, SPDX 3 `from`) to its target
-(SPDX 2 `relatedSpdxElement`, SPDX 3 `to`). A reverse type is followed the
-other way. The checker does not check the types of the elements at the two
-ends: SPDX 2.3 Table 68 writes every relationship between `SPDXRef-A` and
-`SPDXRef-B` and does not restrict them to packages, files or snippets.
+The checker starts from the root elements and follows relationships from
+parent to child, never from child to parent. The relationship graph is
+directed, so the checker keeps a traversal direction for each relationship
+type, as well as its name. In SPDX 2, `A <type> B` is written from
+`spdxElementId` A to `relatedSpdxElement` B. In SPDX 3, `A <type> B` is
+written from `from` A to `to` B.
 
-For SPDX 3, the roots are the `rootElement` of the `SpdxDocument` and the
-targets of relationships from the `SpdxDocument`. Each collection, such as an
-`Sbom`, also links to its own `rootElement`. The checker follows these
-relationship types:
+- A forward type is followed from A to B.
+- A reverse type is followed from B to A.
 
-- Forward, composition: `contains`, `hasOptionalComponent` and
-  `packagedBy`
-- Forward, dependency: `dependsOn`, `hasDynamicLink`,
-  `hasStaticLink`, `hasPrerequisite`, `hasOptionalDependency` and
-  `hasProvidedDependency`
-- Forward, from product to tool: `usesTool`
-- Reverse, from product to source: `generates`
+The checker does not check the types of the elements at the two ends.
+SPDX 2.3 clause 11.1.1 says "you can represent a relationship between two
+different Files, between a Package and a File, between two Packages, or
+between one SPDXDocument and another SPDXDocument".
 
-`generates` is the one reverse type. "The `from` Element generates each `to`
-Element", so the `to` element is the product and the `from` element is its
-source. The checker goes from the product to the source, as it goes from a
+This table summarizes what the checker follows. Each row is one SPDX 3 type
+and the SPDX 2 types that Annex A.1 translates to it.
+
+<!-- markdownlint-disable MD013 -->
+
+| Kind | SPDX 3 type | SPDX 3 direction | SPDX 2 forward types | SPDX 2 reverse types | Parent to child |
+| --- | --- | --- | --- | --- | --- |
+| Root | Any relationship from the `SpdxDocument`, such as `describes` | Root | `DESCRIBES` from `SPDXRef-DOCUMENT`; from any other element, followed forward | `DESCRIBED_BY` to `SPDXRef-DOCUMENT` | Document to described element |
+| Root | `rootElement` of a collection | Root | none | none | Collection to root element |
+| Composition | `contains` | Forward | `CONTAINS` | `CONTAINED_BY` | Whole to part |
+| Composition | `hasOptionalComponent` | Forward | none | `OPTIONAL_COMPONENT_OF` | Whole to optional part |
+| Composition | `packagedBy` | Forward | none | `PACKAGE_OF` | Element to its package |
+| Dependency | `dependsOn` | Forward | `DEPENDS_ON` | `DEPENDENCY_OF`, `BUILD_DEPENDENCY_OF`, `DEV_DEPENDENCY_OF`, `RUNTIME_DEPENDENCY_OF`, `TEST_DEPENDENCY_OF` | Dependent to dependency |
+| Dependency | `hasOptionalDependency` | Forward | none | `OPTIONAL_DEPENDENCY_OF` | Dependent to dependency |
+| Dependency | `hasProvidedDependency` | Forward | none | `PROVIDED_DEPENDENCY_OF` | Dependent to dependency |
+| Dependency | `hasPrerequisite` | Forward | `HAS_PREREQUISITE` | `PREREQUISITE_FOR` | Dependent to prerequisite |
+| Dependency | `hasDynamicLink` | Forward | `DYNAMIC_LINK` (see the overrides below) | none | Linking element to linked element |
+| Dependency | `hasStaticLink` | Forward | `STATIC_LINK` | none | Linking element to linked element |
+| Tool | `usesTool` | Forward | none | `BUILD_TOOL_OF`, `DEV_TOOL_OF`, `TEST_TOOL_OF` | Product to tool |
+| Provenance | `generates` | Reverse | `GENERATED_FROM` | `GENERATES` | Product to source |
+
+<!-- markdownlint-enable MD013 -->
+
+The checker follows no other relationship type, for example `DESCENDANT_OF`,
+`FILE_MODIFIED`, `OTHER`, `hasDataFile` or `other`.
+
+`generates` is the one reverse SPDX 3 type. "The `from` Element generates each
+`to` Element", so the `to` element is the product and the `from` element is
+its source. The checker goes from the product to the source, as it goes from a
 product to its tool and from a dependent to its dependency. This choice is
 ours: SPDX does not define a parent and a child for these relationships.
 We include tools and sources because they are part of how a component was
 made, which an SBOM describes.
 
-For SPDX 2, the roots are the elements that the document describes:
-`SPDXRef-DOCUMENT DESCRIBES A` or `A DESCRIBED_BY SPDXRef-DOCUMENT`
-(SPDX 2.3 clause 11.1, Table 68). `SPDXRef-DOCUMENT` is the document's own ID
-(clause 6.3).
+The roots are:
 
-SPDX 2.3 does not say that one relationship type is the inverse of another, or
-which end is the parent. The checker derives each SPDX 2 type from its SPDX 3
-translation in Annex A.1. An SPDX 2 type is followed if its SPDX 3 type is
-followed. Its direction is the SPDX 3 direction, reversed when Annex A.1 says
-"Swap to and from? Y". The same SBOM in SPDX 2 and in SPDX 3 gives the same
-result. This gives:
+- SPDX 2: the elements in `SPDXRef-DOCUMENT DESCRIBES A` or
+  `A DESCRIBED_BY SPDXRef-DOCUMENT` (SPDX 2.3 clause 11.1, Table 68).
+  `SPDXRef-DOCUMENT` is the document's own ID (clause 6.3).
+- SPDX 3: the `rootElement` of the `SpdxDocument` and the `to` elements of
+  any relationship from the `SpdxDocument`. Each collection, such as an
+  `Sbom`, also links to its own `rootElement`.
 
-- Forward: `CONTAINS`, `DEPENDS_ON`, `DYNAMIC_LINK`, `STATIC_LINK`,
-  `HAS_PREREQUISITE` and `GENERATED_FROM`, and `DESCRIBES` (see below)
-- Reverse: `CONTAINED_BY`, `OPTIONAL_COMPONENT_OF`, `PACKAGE_OF`,
-  `DEPENDENCY_OF`, `BUILD_DEPENDENCY_OF`, `DEV_DEPENDENCY_OF`,
-  `OPTIONAL_DEPENDENCY_OF`, `PROVIDED_DEPENDENCY_OF`, `RUNTIME_DEPENDENCY_OF`,
-  `TEST_DEPENDENCY_OF`, `PREREQUISITE_FOR`, `BUILD_TOOL_OF`, `DEV_TOOL_OF`,
-  `TEST_TOOL_OF` and `GENERATES`
+SPDX 2.3 does not say that one relationship type is the inverse of another,
+or which end is the parent. The checker derives each SPDX 2 type from its
+SPDX 3 translation in Annex A.1. An SPDX 2 type is followed if its SPDX 3 type
+is followed. Its direction is the SPDX 3 direction, reversed when Annex A.1
+says "Swap to and from? Y". The same SBOM in SPDX 2 and in SPDX 3 gives the
+same result. For example:
 
-For example, Table 68 says "SPDXRef-A is a build dependency of SPDXRef-B" for
-`A BUILD_DEPENDENCY_OF B`. Annex A.1 translates it to `B dependsOn A`, with the
-build lifecycle scope, so the checker goes from B to A. All three tool types
-translate to `usesTool`, so they are all followed. Annex A.1 translates
-`A GENERATED_FROM B` to `B generates A`, so the checker goes from A, the
-product, to B, the source.
+- Table 68 says "SPDXRef-A is a build dependency of SPDXRef-B" for
+  `A BUILD_DEPENDENCY_OF B`. Annex A.1 translates it to `B dependsOn A`, with
+  the build lifecycle scope, so the checker goes from B to A.
+- Annex A.1 translates `A GENERATED_FROM B` to `B generates A`. `generates` is
+  reverse, and the swap reverses it again, so the checker goes from A, the
+  product, to B, the source.
+- All three tool types translate to `usesTool`, so they are all followed.
 
 The checker departs from Annex A.1 in two places:
 
-- `DESCRIBES` is followed forward. SPDX 3 marks roots with `rootElement`, so
-  the checker does not follow `describes` for SPDX 3. SPDX 2 has no
-  `rootElement` and uses `DESCRIBES` for both roots and other elements.
+- `DESCRIBES` is followed forward from any element. Table 68 defines
+  `DESCRIBES` only from `SPDXRef-DOCUMENT`, but SBOMs also use it between
+  other elements. For SPDX 3, the checker makes the `to` elements of any
+  relationship from the `SpdxDocument` roots, but does not follow `describes`
+  from other elements: SPDX 3 marks roots with `rootElement`.
 - `DYNAMIC_LINK` is followed forward. Annex A.1 says "Swap to and from? Y" for
   it, but Table 68 says "SPDXRef-A dynamically links to SPDXRef-B" and
   SPDX 3.0.1 says "The `from` Element dynamically links in each `to` Element".
@@ -114,36 +134,48 @@ it makes no difference.
 **Q: The CLI output reports that a relationship points to a missing element.
 What does this mean?**
 
-A: A relationship that the checker follows refers to an element that the SBOM
-does not define.
-
-For SPDX 3, the checker checks each `to` element. For `generates`, which it
-follows from `to` to `from`, it also checks the `from` element.
-
-For SPDX 2, SPDX 2.3 clause 11.1 (Table 69) gives the format of a
-relationship as:
+A: A root, or a relationship that the checker follows, refers to an element
+that the SBOM does not define. SPDX 2.3 clause 11.1 (Table 69) gives the
+format of an SPDX 2 relationship as:
 
 ```text
 ["DocumentRef-"[idstring]":"]SPDXID <relationship>
     ["DocumentRef-"[idstring]":"]SPDXID | NONE | NOASSERTION
 ```
 
-The checker reads this as follows:
+An element ID can be at either end, so either end can be missing. The checker
+reads relationships as written, from A to B, whatever the traversal direction,
+and checks the same things for SPDX 2 and SPDX 3:
 
-- Either end can be an SPDX ID, so either end can be missing. When the
-  `spdxElementId` is missing, the error is reported from the related element.
-- `NONE` means there are no other relationships and `NOASSERTION` means it is
-  not known whether there are any (Table 69). Neither is an element, so neither
-  is missing.
-- `DocumentRef-<id>:SPDXRef-<id>` refers to an element in another SPDX
-  document. Table 69 calls the prefix "an optional reference to an external
-  SPDX Document as described in 6.6". Clause 6.6 (External document
-  references field) declares `DocumentRef-<id>` in an `ExternalDocumentRef`.
-  If `DocumentRef-<id>` is declared, the element is not missing. If it is not
-  declared, the element is missing.
-- The external document itself is `DocumentRef-<id>:SPDXRef-DOCUMENT`, as in
-  the Annex A.1 "External Document Reference" translation. A bare
-  `DocumentRef-<id>` does not match the format, so it is reported as missing.
+<!-- markdownlint-disable MD013 -->
+
+| Case | Reported as missing | Report line or reason |
+| --- | --- | --- |
+| Followed relationship `A <type> B`, B missing | Yes | "Component 'A' links to missing element 'B'" |
+| Followed relationship `A <type> B`, only A missing | Yes | "Component 'B' links to missing element 'A'" |
+| Root missing | Yes | "Component '\<document or collection\>' links to missing element '\<root\>'" |
+| Relationship that the checker does not follow | No | Not checked |
+| `NONE`, `NOASSERTION` (SPDX 2) | No | Not elements (Table 69) |
+| SPDX 3 individuals such as `NoneElement` | No | Defined by SPDX 3 |
+| `DocumentRef-<id>:SPDXID` with `DocumentRef-<id>` declared (SPDX 2) | No | Defined in the external document |
+| `DocumentRef-<id>:SPDXID` with `DocumentRef-<id>` not declared (SPDX 2) | Yes | No such external document |
+| Bare `DocumentRef-<id>` (SPDX 2) | Yes | Does not match the Table 69 format |
+
+<!-- markdownlint-enable MD013 -->
+
+Each missing element is reported once for each element that links to it.
+
+`NONE` means there are no other relationships and `NOASSERTION` means it is
+not known whether there are any (Table 69). Neither is an element.
+
+`DocumentRef-<id>:SPDXRef-<id>` refers to an element in another SPDX
+document. Table 69 calls the prefix "an optional reference to an external
+SPDX Document as described in 6.6". Clause 6.6 (External document references
+field) declares `DocumentRef-<id>` in an `ExternalDocumentRef`. The external
+document itself is `DocumentRef-<id>:SPDXRef-DOCUMENT`: clause 6.3.1 says
+"To reference another SPDX Document in total, this identifier should be used
+with the external document identifier preceding it", and clause 11.1.3
+Example 1 has `SPDXRef-DOCUMENT AMENDS DocumentRef-SPDXA:SPDXRef-DOCUMENT`.
 
 The checker does not download or read external documents. Clause 6.6 gives a
 URI and a checksum for each one, but the document may not be reachable, and
@@ -152,5 +184,5 @@ the declaration instead. An external element is not a component of this SBOM,
 so the checker neither checks it for conformance nor reports it as floating.
 
 [spdx-2.3]: https://spdx.github.io/spdx-spec/v2.3.1/
-[spdx-3.0-a1]: https://github.com/spdx/using/blob/main/docs/diffs-from-previous-editions.md
+[spdx-3.0-a1]: https://github.com/spdx/using/blob/10e4b14c9cc5642aa4b4ce629e2b0560b771cf34/docs/diffs-from-previous-editions.md
 [spdx-3.0.1-reltype]: https://spdx.github.io/spdx-spec/v3.0.1/model/Core/Vocabularies/RelationshipType/

@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning][semver].
   reported as pointing to a missing element ([#478])
 - SPDX 2 reverse relationships such as `DEPENDENCY_OF`, `BUILD_DEPENDENCY_OF`,
   `CONTAINED_BY` and `PREREQUISITE_FOR` now connect elements to the
-  relationship graph, so the elements they link are no longer reported as
+  relationship graph, so the packages they link are no longer reported as
   floating ([#481])
 - A relationship to an element in an SPDX 2 external document,
   such as `DocumentRef-other:SPDXRef-Package-B`, is no longer reported as
@@ -30,10 +30,10 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Added
 
-- `FAQ.md` explains which SPDX 2 relationships connect an element to the
-  relationship graph and when an element counts as missing, with references
-  to SPDX 2.3 clauses 6.3, 6.6 and 11.1 and to the SPDX 3.0 Annex A.1
-  translation tables
+- `FAQ.md` has tables that summarize which SPDX 2 and SPDX 3 relationships
+  connect an element to the relationship graph, in which direction, and when
+  an element counts as missing, with references to SPDX 2.3 clauses 6.3, 6.6
+  and 11.1 and to the SPDX 3.0 Annex A.1 translation tables
 - GitHub releases attach the wheel, the sdist and the wheel's SPDX 3 SBOM,
   each with a Sigstore bundle and a build provenance attestation;
   see "Verify release files" in `SECURITY.md`
@@ -49,9 +49,13 @@ and this project adheres to [Semantic Versioning][semver].
   result in SPDX 2 and SPDX 3; `SPDX2_RELATIONSHIP_TRAVERSAL` and
   `SPDX3_RELATIONSHIP_TRAVERSAL` in `constants.py` hold the direction of each
   type
-- An SPDX 2 composition or dependency relationship whose `spdxElementId` is
-  missing is now reported as pointing to a missing element
-  (SPDX 2.3 clause 11.1, Table 69)
+- A relationship that the checker follows is now checked for a missing
+  element at both ends, in SPDX 2 (`spdxElementId`) and SPDX 3 (`from`), and
+  a missing root is reported; a missing element is listed once per element
+  that links to it
+- `get_reachable_nodes` returns its connection map in traversal direction,
+  from parent to child, so a reverse relationship such as `A CONTAINED_BY B`
+  is an edge from B to A
 - Pull request and release builds embed the SBOM with Pitloom 0.20.1 and fail
   on an invalid SBOM; content types are detected with magika
 - Releases publish to PyPI only after the SBOM is validated; release files are

@@ -57,9 +57,10 @@ SPDX3_RELATIONSHIP_TRAVERSAL: dict[str, TraversalDirection] = {
 # Translation of SPDX 2.3 relationship types to SPDX 3.0, copied from the
 # "Relationship" table in SPDX 3.0 Annex A.1 "Differences between V3.0 and
 # V2.3": SPDX 2 type -> (SPDX 3 type, swap to and from?).
-# https://github.com/spdx/using/blob/main/docs/diffs-from-previous-editions.md
-# Rows checked against SPDX 2.3 clause 11.1 (Table 68) and the SPDX 3.0.1
-# RelationshipType descriptions disagree in direction in two places:
+# https://github.com/spdx/using/blob/10e4b14c9cc5642aa4b4ce629e2b0560b771cf34/docs/diffs-from-previous-editions.md
+# (spdx/using main branch, commit 10e4b14).
+# Checked against SPDX 2.3 clause 11.1 (Table 68) and the SPDX 3.0.1
+# RelationshipType descriptions, two rows disagree in direction:
 # - DYNAMIC_LINK is marked swapped, but "SPDXRef-A dynamically links to
 #   SPDXRef-B" and "The from Element dynamically links in each to Element"
 #   read the same way, as STATIC_LINK and hasStaticLink do.
@@ -163,7 +164,9 @@ SPDX2_RELATIONSHIP_TRAVERSAL: dict[str, TraversalDirection] = (
 
 # Relationship type names by traversal direction, kept for compatibility.
 # The names say "composition", but the sets also hold tool and provenance
-# relationships.
+# relationships. VALID_SPDX3_COMPOSITION_RELATIONSHIPS holds forward types
+# only, so it does not hold generates. Use SPDX2_RELATIONSHIP_TRAVERSAL and
+# SPDX3_RELATIONSHIP_TRAVERSAL to get every followed type with its direction.
 VALID_SPDX2_COMPOSITION_RELATIONSHIPS = {
     name
     for name, direction in SPDX2_RELATIONSHIP_TRAVERSAL.items()

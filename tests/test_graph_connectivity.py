@@ -440,6 +440,23 @@ def test_spdx2_traversal_is_derived_from_spdx3(
     assert SPDX2_RELATIONSHIP_TRAVERSAL.get(spdx2_type) is direction
 
 
+_SPDX3_BASE_SBOM = Path(__file__).parent / "data" / "spdx3" / "no_elements_missing.json"
+
+
+def _spdx3_element_id(name: str) -> str:
+    """
+    Return the SPDX ID for a test element name in ``_SPDX3_BASE_SBOM``.
+
+    "ROOT" is the root package, "DOC" is the SpdxDocument and any other name
+    is ``https://example.com/<name>``.
+    """
+    graph = json.loads(_SPDX3_BASE_SBOM.read_text(encoding="utf-8"))["@graph"]
+    types = {"ROOT": "dataset_DatasetPackage", "DOC": "SpdxDocument"}
+    if name in types:
+        return str(next(e for e in graph if e["type"] == types[name])["spdxId"])
+    return f"https://example.com/{name}"
+
+
 def _spdx3_checker_with(
     tmp_path: Path, relationships: list[tuple[str, str, str]]
 ) -> sbom_checker.SbomChecker:
@@ -447,18 +464,14 @@ def _spdx3_checker_with(
     Check an SPDX 3 SBOM whose root package has extra packages and relationships.
 
     Each relationship is (from, relationshipType, to), where "ROOT" is the
-    root package and any other name is an extra package, or a missing one if
-    it starts with "missing".
+    root package, "DOC" is the SpdxDocument and any other name is an extra
+    package, or a missing one if it starts with "missing".
     """
-    src = Path(__file__).parent / "data" / "spdx3" / "no_elements_missing.json"
-    doc = json.loads(src.read_text(encoding="utf-8"))
-    root = next(e for e in doc["@graph"] if e["type"] == "dataset_DatasetPackage")
-
-    def element_id(name: str) -> str:
-        return root["spdxId"] if name == "ROOT" else f"https://example.com/{name}"
+    doc = json.loads(_SPDX3_BASE_SBOM.read_text(encoding="utf-8"))
+    element_id = _spdx3_element_id
 
     names = {n for rel in relationships for n in (rel[0], rel[2])}
-    for name in sorted(names - {"ROOT"}):
+    for name in sorted(names - {"ROOT", "DOC"}):
         if not name.startswith("missing"):
             doc["@graph"].append(
                 {
@@ -524,3 +537,105 @@ def test_spdx3_uses_tool_and_generates_missing_element(
     """A usesTool or generates relationship with a missing end is reported."""
     sbom = _spdx3_checker_with(tmp_path, [relationship])
     assert sbom.has_unknown_pointers is True
+
+
+@pytest.mark.parametrize(
+    ("relationship", "expected_unknown_edges"),
+    [
+        (
+            ("SPDXRef-Missing", RelationshipType.CONTAINS, "SPDXRef-A"),
+            {"SPDXRef-A": ["SPDXRef-Missing"]},
+        ),
+        (
+            ("SPDXRef-Missing", RelationshipType.DESCRIBED_BY, "SPDXRef-DOCUMENT"),
+            {"SPDXRef-DOCUMENT": ["SPDXRef-Missing"]},
+        ),
+        (
+            ("SPDXRef-Missing1", RelationshipType.CONTAINS, "SPDXRef-Missing2"),
+            {"SPDXRef-Missing1": ["SPDXRef-Missing2"]},
+        ),
+    ],
+    ids=["forward-missing-source", "missing-root", "both-missing"],
+)
+def test_spdx2_missing_source_or_root(
+    caplog: pytest.LogCaptureFixture,
+    relationship: tuple[str, RelationshipType, str],
+    expected_unknown_edges: dict[str, list[str]],
+) -> None:
+    """A missing element at either end, or as a root, is reported once."""
+    doc = _make_spdx2_doc(
+        ["SPDXRef-A"],
+        [
+            ("SPDXRef-DOCUMENT", RelationshipType.DESCRIBES, "SPDXRef-A"),
+            relationship,
+            relationship,  # a duplicate is reported once
+        ],
+    )
+    _, _, unknown_edges, has_unknown_pointers = analyze_graph_connectivity("spdx2", doc)
+    assert unknown_edges == expected_unknown_edges
+    assert has_unknown_pointers is True
+    assert "Traversal bug" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "relationship",
+    [
+        ("SPDXRef-A", RelationshipType.DEPENDS_ON, "DocumentRef-other:SPDXRef-B"),
+        ("DocumentRef-other:SPDXRef-B", RelationshipType.DEPENDENCY_OF, "SPDXRef-A"),
+        ("DocumentRef-other:SPDXRef-B", RelationshipType.CONTAINS, "SPDXRef-A"),
+    ],
+    ids=["target", "reverse-source", "forward-source"],
+)
+def test_spdx2_external_element_at_either_end(
+    caplog: pytest.LogCaptureFixture, relationship: tuple[str, RelationshipType, str]
+) -> None:
+    """A declared external element is known at either end, reached or not."""
+    doc = _make_spdx2_doc(
+        ["SPDXRef-A"],
+        [
+            ("SPDXRef-DOCUMENT", RelationshipType.DESCRIBES, "SPDXRef-A"),
+            relationship,
+        ],
+        external_doc_ref_ids=["DocumentRef-other"],
+    )
+    _, floating, unknown_edges, has_unknown_pointers = analyze_graph_connectivity(
+        "spdx2", doc
+    )
+    assert floating == set()
+    assert not unknown_edges
+    assert has_unknown_pointers is False
+    assert "Traversal bug" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("relationship", "expected_unknown_edges"),
+    [
+        (
+            ("missing-a", "contains", "ROOT"),
+            {"ROOT": ["missing-a"]},
+        ),
+        (
+            ("missing-a", "generates", "missing-b"),
+            {"missing-a": ["missing-b"]},
+        ),
+        (
+            ("DOC", "describes", "missing-root"),
+            {"DOC": ["missing-root"]},
+        ),
+    ],
+    ids=["forward-missing-from", "both-missing", "missing-root"],
+)
+def test_spdx3_missing_from_or_root(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+    relationship: tuple[str, str, str],
+    expected_unknown_edges: dict[str, list[str]],
+) -> None:
+    """SPDX 3 reports a missing element at either end, or as a root, once."""
+    sbom = _spdx3_checker_with(tmp_path, [relationship, relationship])
+    element_id = _spdx3_element_id
+    assert sbom.unknown_pointer_edges == {
+        element_id(k): [element_id(v) for v in vs]
+        for k, vs in expected_unknown_edges.items()
+    }
+    assert "Traversal bug" not in caplog.text
