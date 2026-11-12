@@ -31,3 +31,23 @@ are not connected to the primary software tree via relationships.
 The checker safely ignores these floating elements during compliance
 validation, but it is a sign that the tool which generated your SBOM may be
 leaving unlinked "garbage" data in the file.
+
+For SPDX 2, the checker follows these relationships from parent to child:
+
+- `DESCRIBES`, `CONTAINS`, `DEPENDS_ON`, `DYNAMIC_LINK`, `STATIC_LINK` and
+  `HAS_PREREQUISITE`, from the element to the related element
+- `CONTAINED_BY`, `OPTIONAL_COMPONENT_OF`, `PACKAGE_OF`, `DEPENDENCY_OF`,
+  `BUILD_DEPENDENCY_OF`, `DEV_DEPENDENCY_OF`, `OPTIONAL_DEPENDENCY_OF`,
+  `PROVIDED_DEPENDENCY_OF`, `RUNTIME_DEPENDENCY_OF`, `TEST_DEPENDENCY_OF` and
+  `PREREQUISITE_FOR`, from the related element to the element
+
+Other relationships, such as `BUILD_TOOL_OF` or `GENERATED_FROM`, do not
+connect an element to the tree.
+
+**Q: The CLI output reports that a relationship points to a missing element.
+What does this mean?**
+
+A: A composition or dependency relationship refers to an element that is not
+defined in the SBOM. In SPDX 2, an element in another document, written as
+`DocumentRef-<id>:SPDXRef-<id>`, is not missing when the document declares
+`DocumentRef-<id>` in an `ExternalDocumentRef`.

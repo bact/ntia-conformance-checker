@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning][semver].
 
 - A relationship to an SPDX 3 individual such as `NoneElement` is no longer
   reported as pointing to a missing element ([#478])
+- SPDX 2 reverse relationships such as `DEPENDENCY_OF`, `BUILD_DEPENDENCY_OF`,
+  `CONTAINED_BY` and `PREREQUISITE_FOR` now connect elements to the
+  relationship graph, so the elements they link are no longer reported as
+  floating ([#481])
+- A relationship to an element in an SPDX 2 external document,
+  such as `DocumentRef-other:SPDXRef-Package-B`, is no longer reported as
+  pointing to a missing element when `DocumentRef-other` is declared in an
+  `ExternalDocumentRef` ([#482])
+- An SPDX 2 composition relationship whose `spdxElementId` is missing is now
+  reported as pointing to a missing element
 
 ### Added
 
@@ -35,6 +45,8 @@ and this project adheres to [Semantic Versioning][semver].
   fails
 
 [#478]: https://github.com/spdx/ntia-conformance-checker/pull/478
+[#481]: https://github.com/spdx/ntia-conformance-checker/issues/481
+[#482]: https://github.com/spdx/ntia-conformance-checker/issues/482
 
 ## [6.0.0] - 2026-10-05
 
