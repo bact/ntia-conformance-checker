@@ -43,12 +43,16 @@ The roots are the elements that the document describes:
 (SPDX 2.3 clause 11.1, Table 68). `SPDXRef-DOCUMENT` is the document's own ID
 (clause 6.3).
 
-From the roots, the checker follows relationships from parent to child.
+From the roots, the checker follows relationships from parent to child,
+never from child to parent. The relationship graph is directed, so the
+checker keeps a traversal direction for each relationship type, as well as
+its name.
+
 It follows these forward relationships from the element to the related
 element:
 
-- `DESCRIBES`, `CONTAINS`, `DEPENDS_ON`, `DYNAMIC_LINK`, `STATIC_LINK` and
-  `HAS_PREREQUISITE`
+- `DESCRIBES`, `CONTAINS`, `DEPENDS_ON`, `DYNAMIC_LINK`, `STATIC_LINK`,
+  `HAS_PREREQUISITE` and `GENERATED_FROM`
 
 Table 68 describes each of them from the parent's side, such as
 "SPDXRef-A contains SPDXRef-B".
@@ -58,8 +62,8 @@ element:
 
 - `CONTAINED_BY`, `OPTIONAL_COMPONENT_OF`, `PACKAGE_OF`, `DEPENDENCY_OF`,
   `BUILD_DEPENDENCY_OF`, `DEV_DEPENDENCY_OF`, `OPTIONAL_DEPENDENCY_OF`,
-  `PROVIDED_DEPENDENCY_OF`, `RUNTIME_DEPENDENCY_OF`, `TEST_DEPENDENCY_OF` and
-  `PREREQUISITE_FOR`
+  `PROVIDED_DEPENDENCY_OF`, `RUNTIME_DEPENDENCY_OF`, `TEST_DEPENDENCY_OF`,
+  `PREREQUISITE_FOR`, `BUILD_TOOL_OF` and `GENERATES`
 
 SPDX 2.3 does not say that one relationship type is the inverse of another.
 This is our reading:
@@ -67,19 +71,38 @@ This is our reading:
 - Table 68 describes each reverse type as the same fact from the child's side.
   For example, "SPDXRef-A is contained by SPDXRef-B" states what
   "SPDXRef-B contains SPDXRef-A" states.
-- Annex A.1 translates each reverse type to an SPDX 3 type that the checker
-  follows for SPDX 3, with "Swap to and from? Y". For example,
-  `BUILD_DEPENDENCY_OF` becomes `dependsOn` with the build lifecycle scope,
-  from the related element to the element. Following them gives the same
-  result for an SBOM in SPDX 2 and in SPDX 3.
+- Annex A.1 translates each reverse type with "Swap to and from? Y".
+  For the composition and dependency types, it translates to an SPDX 3 type
+  that the checker follows for SPDX 3. For example, `BUILD_DEPENDENCY_OF`
+  becomes `dependsOn` with the build lifecycle scope, from the related element
+  to the element. Following them gives the same result for an SBOM in SPDX 2
+  and in SPDX 3.
 - SBOM generators write either form. If the checker ignored the reverse form,
   it would skip the components that a generator links that way.
 
-The checker does not follow other relationships, such as `BUILD_TOOL_OF`,
-`DEV_TOOL_OF`, `TEST_TOOL_OF`, `GENERATED_FROM` or `DESCENDANT_OF`. They describe
-how an element was built or where it came from, not what it is made of or
-what it needs. Annex A.1 translates the tool relationships to `usesTool`,
-which the checker also does not follow for SPDX 3.
+The checker also follows two relationships that describe how an element was
+made, because the tool that builds a component and the source it is generated
+from are part of what the SBOM describes:
+
+- `A BUILD_TOOL_OF B`: "SPDXRef-A is used to build SPDXRef-B" (Table 68).
+  B is the product and A is the tool, so the checker goes from B to A.
+- `A GENERATED_FROM B`: "SPDXRef-A is generated from SPDXRef-B" (Table 68).
+  A is the product and B is its source, so the checker goes from A to B.
+  `A GENERATES B` states the same fact from the source's side, so the checker
+  goes from B to A.
+
+For these two, the traversal direction is our choice: from the product to the
+tool or the source. SPDX 2.3 does not define a parent and a child for them.
+It is not always the SPDX 3 direction: Annex A.1 translates
+`A GENERATED_FROM B` to `B generates A`, from the source to the product.
+The checker does not yet follow `usesTool` or `generates` for SPDX 3.
+
+The checker does not follow other relationships, such as `DEV_TOOL_OF`,
+`TEST_TOOL_OF`, `DESCENDANT_OF` or `OTHER`.
+
+The checker does not check the types of the elements at the two ends of a
+relationship. Table 68 writes every relationship between `SPDXRef-A` and
+`SPDXRef-B` and does not restrict them to packages, files or snippets.
 
 Annex A.1 also marks `DYNAMIC_LINK` as "Swap to and from? Y", but not
 `STATIC_LINK`. Table 68 describes both the same way: "SPDXRef-A dynamically

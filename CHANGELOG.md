@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Changed
 
+- SPDX 2 `BUILD_TOOL_OF`, `GENERATED_FROM` and `GENERATES` relationships now
+  connect elements to the relationship graph: from the product to the tool or
+  the source
 - An SPDX 2 composition or dependency relationship whose `spdxElementId` is
   missing is now reported as pointing to a missing element
   (SPDX 2.3 clause 11.1, Table 69)

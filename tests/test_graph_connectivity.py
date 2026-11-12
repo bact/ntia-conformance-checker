@@ -24,6 +24,7 @@ from spdx_tools.spdx.model.snippet import Snippet
 
 import ntia_conformance_checker.sbom_checker as sbom_checker
 from ntia_conformance_checker.constants import (
+    VALID_SPDX2_COMPOSITION_RELATIONSHIPS,
     VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS,
 )
 from ntia_conformance_checker.graph_utils import (
@@ -222,18 +223,67 @@ def test_spdx2_reverse_relationship_connects_child(rel_name: str) -> None:
     assert has_unknown_pointers is False
 
 
-def test_spdx2_non_composition_reverse_relationship_does_not_connect() -> None:
-    """A tool relationship such as BUILD_TOOL_OF is not a composition edge."""
+@pytest.mark.parametrize(
+    "rel_name", sorted(VALID_SPDX2_COMPOSITION_RELATIONSHIPS - {"DESCRIBES"})
+)
+def test_spdx2_forward_relationship_connects_child(rel_name: str) -> None:
+    """A forward relationship "Parent X Child" links Parent to Child."""
     doc = _make_spdx2_doc(
-        ["SPDXRef-Parent", "SPDXRef-Tool"],
+        ["SPDXRef-Parent", "SPDXRef-Child"],
         [
             ("SPDXRef-DOCUMENT", RelationshipType.DESCRIBES, "SPDXRef-Parent"),
-            ("SPDXRef-Tool", RelationshipType.BUILD_TOOL_OF, "SPDXRef-Parent"),
+            ("SPDXRef-Parent", RelationshipType[rel_name], "SPDXRef-Child"),
+        ],
+    )
+    reachable, floating, unknown_edges, has_unknown_pointers = (
+        analyze_graph_connectivity("spdx2", doc)
+    )
+    assert reachable == {"SPDXRef-Parent", "SPDXRef-Child"}
+    assert floating == set()
+    assert not unknown_edges
+    assert has_unknown_pointers is False
+
+
+@pytest.mark.parametrize(
+    ("relationship", "floating_id"),
+    [
+        # Product BUILD_TOOL_OF Tool: written the wrong way round
+        (
+            ("SPDXRef-Root", RelationshipType.BUILD_TOOL_OF, "SPDXRef-Other"),
+            "SPDXRef-Other",
+        ),
+        # Source GENERATED_FROM Product: written the wrong way round
+        (
+            ("SPDXRef-Other", RelationshipType.GENERATED_FROM, "SPDXRef-Root"),
+            "SPDXRef-Other",
+        ),
+        # Product GENERATES Source: written the wrong way round
+        (
+            ("SPDXRef-Root", RelationshipType.GENERATES, "SPDXRef-Other"),
+            "SPDXRef-Other",
+        ),
+        # OTHER has no direction and is not followed
+        (
+            ("SPDXRef-Root", RelationshipType.OTHER, "SPDXRef-Other"),
+            "SPDXRef-Other",
+        ),
+    ],
+    ids=["build-tool-of", "generated-from", "generates", "other"],
+)
+def test_spdx2_relationship_is_followed_only_in_its_direction(
+    relationship: tuple[str, RelationshipType, str], floating_id: str
+) -> None:
+    """A relationship links parent to child only, never child to parent."""
+    doc = _make_spdx2_doc(
+        ["SPDXRef-Root", "SPDXRef-Other"],
+        [
+            ("SPDXRef-DOCUMENT", RelationshipType.DESCRIBES, "SPDXRef-Root"),
+            relationship,
         ],
     )
     reachable, floating, _, _ = analyze_graph_connectivity("spdx2", doc)
-    assert reachable == {"SPDXRef-Parent"}
-    assert floating == {"SPDXRef-Tool"}
+    assert reachable == {"SPDXRef-Root"}
+    assert floating == {floating_id}
 
 
 @pytest.mark.parametrize(

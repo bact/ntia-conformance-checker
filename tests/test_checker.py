@@ -243,9 +243,10 @@ def test_sbomchecker_missing_supplier_name(test_file: str) -> None:
     assert sbom.dependency_relationships
     assert not sbom.components_without_names
     assert not sbom.components_without_versions
+    # Jena is reached by "SPDXRef-File GENERATED_FROM SPDXRef-fromDoap-0"
     TestCase().assertCountEqual(
         _component_names(sbom.components_without_suppliers),
-        ["glibc", "Saxon"],
+        ["glibc", "Saxon", "Jena"],
     )
     assert not sbom.components_without_identifiers
     assert not sbom.compliant
