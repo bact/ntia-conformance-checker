@@ -24,8 +24,12 @@ from spdx_tools.spdx.model.snippet import Snippet
 
 import ntia_conformance_checker.sbom_checker as sbom_checker
 from ntia_conformance_checker.constants import (
+    SPDX2_RELATIONSHIP_TRAVERSAL,
+    SPDX2_TO_SPDX3_RELATIONSHIP_TYPES,
+    SPDX3_RELATIONSHIP_TRAVERSAL,
     VALID_SPDX2_COMPOSITION_RELATIONSHIPS,
     VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS,
+    TraversalDirection,
 )
 from ntia_conformance_checker.graph_utils import (
     analyze_graph_connectivity,
@@ -390,3 +394,133 @@ def test_spdx2_external_document_ref_file() -> None:
     assert not sbom.unknown_pointer_edges
     assert sbom.reachable_component_ids == {"SPDXRef-Package-A"}
     assert sbom.compliant is True
+
+
+def test_annex_a1_table_covers_every_spdx2_relationship_type() -> None:
+    """The Annex A.1 table has one row for each SPDX 2 relationship type."""
+    assert set(SPDX2_TO_SPDX3_RELATIONSHIP_TYPES) == {
+        rel_type.name for rel_type in RelationshipType
+    }
+
+
+def test_annex_a1_table_and_traversal_use_spdx3_relationship_types() -> None:
+    """Every SPDX 3 type in the table and in the traversal exists in SPDX 3."""
+    spdx3_types = {
+        spdx3_type for spdx3_type, _ in SPDX2_TO_SPDX3_RELATIONSHIP_TYPES.values()
+    }
+    spdx3_types |= set(SPDX3_RELATIONSHIP_TRAVERSAL)
+    for spdx3_type in spdx3_types:
+        assert isinstance(getattr(spdx3.RelationshipType, spdx3_type, None), str)
+
+
+@pytest.mark.parametrize(
+    ("spdx2_type", "direction"),
+    [
+        # From the Annex A.1 table
+        ("CONTAINS", TraversalDirection.FORWARD),
+        ("CONTAINED_BY", TraversalDirection.REVERSE),
+        ("BUILD_TOOL_OF", TraversalDirection.REVERSE),
+        ("DEV_TOOL_OF", TraversalDirection.REVERSE),
+        ("TEST_TOOL_OF", TraversalDirection.REVERSE),
+        ("GENERATED_FROM", TraversalDirection.FORWARD),
+        ("GENERATES", TraversalDirection.REVERSE),
+        # Overrides
+        ("DESCRIBES", TraversalDirection.FORWARD),
+        ("DYNAMIC_LINK", TraversalDirection.FORWARD),
+        # Not followed
+        ("DESCRIBED_BY", None),
+        ("FILE_MODIFIED", None),
+        ("OTHER", None),
+    ],
+)
+def test_spdx2_traversal_is_derived_from_spdx3(
+    spdx2_type: str, direction: TraversalDirection | None
+) -> None:
+    """SPDX 2 directions follow the SPDX 3 translation, or an override."""
+    assert SPDX2_RELATIONSHIP_TRAVERSAL.get(spdx2_type) is direction
+
+
+def _spdx3_checker_with(
+    tmp_path: Path, relationships: list[tuple[str, str, str]]
+) -> sbom_checker.SbomChecker:
+    """
+    Check an SPDX 3 SBOM whose root package has extra packages and relationships.
+
+    Each relationship is (from, relationshipType, to), where "ROOT" is the
+    root package and any other name is an extra package, or a missing one if
+    it starts with "missing".
+    """
+    src = Path(__file__).parent / "data" / "spdx3" / "no_elements_missing.json"
+    doc = json.loads(src.read_text(encoding="utf-8"))
+    root = next(e for e in doc["@graph"] if e["type"] == "dataset_DatasetPackage")
+
+    def element_id(name: str) -> str:
+        return root["spdxId"] if name == "ROOT" else f"https://example.com/{name}"
+
+    names = {n for rel in relationships for n in (rel[0], rel[2])}
+    for name in sorted(names - {"ROOT"}):
+        if not name.startswith("missing"):
+            doc["@graph"].append(
+                {
+                    "type": "software_Package",
+                    "spdxId": element_id(name),
+                    "creationInfo": "_:creationinfo",
+                    "name": name,
+                }
+            )
+    for i, (from_name, rel_type, to_name) in enumerate(relationships):
+        doc["@graph"].append(
+            {
+                "type": "Relationship",
+                "spdxId": f"https://example.com/rel-{i}",
+                "creationInfo": "_:creationinfo",
+                "from": element_id(from_name),
+                "relationshipType": rel_type,
+                "to": [element_id(to_name)],
+            }
+        )
+    path = tmp_path / "sbom.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    checker: sbom_checker.SbomChecker = sbom_checker.SbomChecker(
+        str(path), sbom_spec="spdx3"
+    )
+    return checker
+
+
+@pytest.mark.parametrize(
+    ("relationship", "connected"),
+    [
+        (("ROOT", "usesTool", "tool"), True),
+        (("tool", "usesTool", "ROOT"), False),
+        (("source", "generates", "ROOT"), True),
+        (("ROOT", "generates", "product"), False),
+    ],
+    ids=["uses-tool", "uses-tool-reversed", "generates", "generates-reversed"],
+)
+def test_spdx3_uses_tool_and_generates(
+    tmp_path: Path, relationship: tuple[str, str, str], connected: bool
+) -> None:
+    """usesTool goes from the product to the tool, generates from the product to the source."""
+    sbom = _spdx3_checker_with(tmp_path, [relationship])
+    other = next(n for n in (relationship[0], relationship[2]) if n != "ROOT")
+    other_id = f"https://example.com/{other}"
+    assert (other_id in sbom.reachable_component_ids) is connected
+    assert (other_id in sbom.floating_component_ids) is not connected
+    assert sbom.has_unknown_pointers is False
+
+
+@pytest.mark.parametrize(
+    "relationship",
+    [
+        ("ROOT", "usesTool", "missing-tool"),
+        ("missing-source", "generates", "ROOT"),
+        ("source", "generates", "missing-product"),
+    ],
+    ids=["uses-tool", "generates-missing-from", "generates-missing-to"],
+)
+def test_spdx3_uses_tool_and_generates_missing_element(
+    tmp_path: Path, relationship: tuple[str, str, str]
+) -> None:
+    """A usesTool or generates relationship with a missing end is reported."""
+    sbom = _spdx3_checker_with(tmp_path, [relationship])
+    assert sbom.has_unknown_pointers is True

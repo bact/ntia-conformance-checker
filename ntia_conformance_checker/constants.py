@@ -4,6 +4,8 @@
 
 """Constants."""
 
+from enum import Enum
+
 SUPPORTED_SBOM_SPECS_DESC = {
     "spdx2": "Software Package Data Exchange (SPDX) 2.x",
     "spdx3": "System Package Data Exchange (SPDX) 3.x",
@@ -11,77 +13,171 @@ SUPPORTED_SBOM_SPECS_DESC = {
 DEFAULT_SBOM_SPEC = "spdx2"
 SUPPORTED_SBOM_SPECS = set(SUPPORTED_SBOM_SPECS_DESC.keys())
 
-# Each SPDX 2 relationship type that connects an element to the graph is
-# listed with its traversal direction: forward types are followed from
-# spdxElementId to relatedSpdxElement, reverse types the other way.
-# The traversal direction is the one from the parent (the element closer to
-# the root) to the child. It is not always the direction of the relationship
-# in SPDX 3, so it is kept here per type, next to the type name.
-#
-# SPDX 2 relationships of the form "A <type> B" where A is the parent and B is
-# the child. Their SPDX 2.3 clause 11.1 (Table 68) descriptions read
-# "SPDXRef-A contains SPDXRef-B", "SPDXRef-A depends on SPDXRef-B", and so on.
-VALID_SPDX2_COMPOSITION_RELATIONSHIPS = {
+
+class TraversalDirection(Enum):
+    """
+    Direction in which graph traversal follows a relationship type.
+
+    Traversal goes from the parent (the element closer to the root) to the
+    child. ``FORWARD`` follows a relationship from its source
+    (SPDX 2 ``spdxElementId``, SPDX 3 ``from``) to its target
+    (SPDX 2 ``relatedSpdxElement``, SPDX 3 ``to``). ``REVERSE`` follows it
+    from its target to its source.
+    """
+
+    FORWARD = "forward"
+    REVERSE = "reverse"
+
+
+# SPDX 3 relationship types that connect an element to the graph,
+# with their traversal direction. Descriptions are from the SPDX 3.0.1
+# RelationshipType vocabulary.
+SPDX3_RELATIONSHIP_TRAVERSAL: dict[str, TraversalDirection] = {
     # Composition
-    "DESCRIBES",
-    "CONTAINS",
+    "contains": TraversalDirection.FORWARD,
+    "hasOptionalComponent": TraversalDirection.FORWARD,
+    "packagedBy": TraversalDirection.FORWARD,
     # Dependencies
-    "DEPENDS_ON",
-    # DYNAMIC_LINK is forward: Table 68 says "SPDXRef-A dynamically links to
-    # SPDXRef-B", although the SPDX 3.0 Annex A.1 table marks it as swapped.
-    "DYNAMIC_LINK",
-    "STATIC_LINK",
-    "HAS_PREREQUISITE",
-    # Provenance: "SPDXRef-A is generated from SPDXRef-B" (Table 68).
-    # A is the product and B is its source, so traversal goes from A to B.
-    # This is against the SPDX 3 direction: Annex A.1 translates it to
-    # "B generates A".
-    "GENERATED_FROM",
+    "dependsOn": TraversalDirection.FORWARD,
+    "hasDynamicLink": TraversalDirection.FORWARD,
+    "hasStaticLink": TraversalDirection.FORWARD,
+    "hasPrerequisite": TraversalDirection.FORWARD,
+    "hasOptionalDependency": TraversalDirection.FORWARD,
+    "hasProvidedDependency": TraversalDirection.FORWARD,
+    # Tools: "The from Element uses each to Element as a tool".
+    # The from Element is the product, so traversal goes from it to the tool.
+    "usesTool": TraversalDirection.FORWARD,
+    # Provenance: "The from Element generates each to Element".
+    # The to Element is the product and the from Element is its source,
+    # so traversal goes from the product to the source, against the
+    # relationship direction.
+    "generates": TraversalDirection.REVERSE,
 }
-# SPDX 2 relationships of the form "A <type> B" where B is the parent and A is
-# the child. Traversal follows them from B to A, as it follows
-# "B CONTAINS A" or "B DEPENDS_ON A".
-# SPDX 2.3 clause 11.1 (Table 68) describes each from the child's side,
-# such as "SPDXRef-A is contained by SPDXRef-B", but does not say that it is
-# the inverse of another type. The SPDX 3.0 Annex A.1 "Relationship"
-# translation table marks each with "Swap to and from? Y". For composition
-# and dependency types, it maps each to a type in
-# VALID_SPDX3_COMPOSITION_RELATIONSHIPS, so SPDX 2 and SPDX 3 results agree.
+
+# Translation of SPDX 2.3 relationship types to SPDX 3.0, copied from the
+# "Relationship" table in SPDX 3.0 Annex A.1 "Differences between V3.0 and
+# V2.3": SPDX 2 type -> (SPDX 3 type, swap to and from?).
+# https://github.com/spdx/using/blob/main/docs/diffs-from-previous-editions.md
+# Rows checked against SPDX 2.3 clause 11.1 (Table 68) and the SPDX 3.0.1
+# RelationshipType descriptions disagree in direction in two places:
+# - DYNAMIC_LINK is marked swapped, but "SPDXRef-A dynamically links to
+#   SPDXRef-B" and "The from Element dynamically links in each to Element"
+#   read the same way, as STATIC_LINK and hasStaticLink do.
+#   See SPDX2_RELATIONSHIP_TRAVERSAL_OVERRIDES.
+# - FILE_MODIFIED is not marked swapped, but "SPDXRef-A is a file that was
+#   modified from SPDXRef-B" reads as "B modifiedBy A".
+#   Traversal does not follow it.
+# The table is copied as published, so that a later edition can be compared.
+SPDX2_TO_SPDX3_RELATIONSHIP_TYPES: dict[str, tuple[str, bool]] = {
+    "AMENDS": ("amendedBy", True),
+    "ANCESTOR_OF": ("ancestorOf", False),
+    "BUILD_DEPENDENCY_OF": ("dependsOn", True),
+    "BUILD_TOOL_OF": ("usesTool", True),
+    "CONTAINED_BY": ("contains", True),
+    "CONTAINS": ("contains", False),
+    "COPY_OF": ("copiedTo", True),
+    "DATA_FILE_OF": ("hasDataFile", True),
+    "DEPENDENCY_MANIFEST_OF": ("hasDependencyManifest", True),
+    "DEPENDENCY_OF": ("dependsOn", True),
+    "DEPENDS_ON": ("dependsOn", False),
+    "DESCENDANT_OF": ("descendantOf", False),
+    "DESCRIBED_BY": ("describes", True),
+    "DESCRIBES": ("describes", False),
+    "DEV_DEPENDENCY_OF": ("dependsOn", True),
+    "DEV_TOOL_OF": ("usesTool", True),
+    "DISTRIBUTION_ARTIFACT": ("hasDistributionArtifact", False),
+    "DOCUMENTATION_OF": ("hasDocumentation", True),
+    "DYNAMIC_LINK": ("hasDynamicLink", True),
+    "EXAMPLE_OF": ("hasExample", True),
+    "EXPANDED_FROM_ARCHIVE": ("expandsTo", True),
+    "FILE_ADDED": ("hasAddedFile", True),
+    "FILE_DELETED": ("hasDeletedFile", True),
+    "FILE_MODIFIED": ("modifiedBy", False),
+    "GENERATED_FROM": ("generates", True),
+    "GENERATES": ("generates", False),
+    "HAS_PREREQUISITE": ("hasPrerequisite", False),
+    "METAFILE_OF": ("hasMetadata", True),
+    "OPTIONAL_COMPONENT_OF": ("hasOptionalComponent", True),
+    "OPTIONAL_DEPENDENCY_OF": ("hasOptionalDependency", True),
+    "OTHER": ("other", False),
+    "PACKAGE_OF": ("packagedBy", True),
+    "PATCH_FOR": ("patchedBy", True),
+    "PATCH_APPLIED": ("patchedBy", True),
+    "PREREQUISITE_FOR": ("hasPrerequisite", True),
+    "PROVIDED_DEPENDENCY_OF": ("hasProvidedDependency", True),
+    "REQUIREMENT_DESCRIPTION_FOR": ("hasRequirement", True),
+    "RUNTIME_DEPENDENCY_OF": ("dependsOn", True),
+    "SPECIFICATION_FOR": ("hasSpecification", True),
+    "STATIC_LINK": ("hasStaticLink", False),
+    "TEST_CASE_OF": ("hasTestCase", True),
+    "TEST_DEPENDENCY_OF": ("dependsOn", True),
+    "TEST_OF": ("hasTest", True),
+    "TEST_TOOL_OF": ("usesTool", True),
+    "VARIANT_OF": ("hasVariant", True),
+}
+
+# SPDX 2 relationship types whose traversal is not derived from
+# SPDX2_TO_SPDX3_RELATIONSHIP_TYPES:
+# - DESCRIBES: SPDX 3 marks roots with rootElement, so describes is not in
+#   SPDX3_RELATIONSHIP_TRAVERSAL. SPDX 2 has no rootElement, and
+#   "SPDXRef-DOCUMENT describes SPDXRef-A" (Table 68) is followed forward.
+#   DESCRIBED_BY to the document marks a root as well; it is handled where
+#   roots are found, not as an edge.
+# - DYNAMIC_LINK: the Annex A.1 row is marked swapped; Table 68 reads forward.
+SPDX2_RELATIONSHIP_TRAVERSAL_OVERRIDES: dict[str, TraversalDirection] = {
+    "DESCRIBES": TraversalDirection.FORWARD,
+    "DYNAMIC_LINK": TraversalDirection.FORWARD,
+}
+
+
+def _derive_spdx2_relationship_traversal() -> dict[str, TraversalDirection]:
+    """
+    Derive SPDX 2 traversal directions from their SPDX 3 translations.
+
+    An SPDX 2 type is followed when its SPDX 3 translation is in
+    ``SPDX3_RELATIONSHIP_TRAVERSAL``. Its direction is the SPDX 3 direction,
+    flipped when Annex A.1 swaps ``to`` and ``from``. This keeps SPDX 2 and
+    SPDX 3 results the same for the same SBOM.
+
+    Returns:
+        dict[str, TraversalDirection]: SPDX 2 type name to direction.
+    """
+    flipped = {
+        TraversalDirection.FORWARD: TraversalDirection.REVERSE,
+        TraversalDirection.REVERSE: TraversalDirection.FORWARD,
+    }
+    traversal: dict[str, TraversalDirection] = {}
+    for spdx2_type, (spdx3_type, swap) in SPDX2_TO_SPDX3_RELATIONSHIP_TYPES.items():
+        direction = SPDX3_RELATIONSHIP_TRAVERSAL.get(spdx3_type)
+        if direction is not None:
+            traversal[spdx2_type] = flipped[direction] if swap else direction
+    traversal.update(SPDX2_RELATIONSHIP_TRAVERSAL_OVERRIDES)
+    return traversal
+
+
+# SPDX 2 relationship types that connect an element to the graph,
+# with their traversal direction.
+SPDX2_RELATIONSHIP_TRAVERSAL: dict[str, TraversalDirection] = (
+    _derive_spdx2_relationship_traversal()
+)
+
+# Relationship type names by traversal direction, kept for compatibility.
+# The names say "composition", but the sets also hold tool and provenance
+# relationships.
+VALID_SPDX2_COMPOSITION_RELATIONSHIPS = {
+    name
+    for name, direction in SPDX2_RELATIONSHIP_TRAVERSAL.items()
+    if direction is TraversalDirection.FORWARD
+}
 VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS = {
-    # Composition
-    "CONTAINED_BY",
-    "OPTIONAL_COMPONENT_OF",
-    "PACKAGE_OF",
-    # Dependencies
-    "DEPENDENCY_OF",
-    "BUILD_DEPENDENCY_OF",
-    "DEV_DEPENDENCY_OF",
-    "OPTIONAL_DEPENDENCY_OF",
-    "PROVIDED_DEPENDENCY_OF",
-    "RUNTIME_DEPENDENCY_OF",
-    "TEST_DEPENDENCY_OF",
-    "PREREQUISITE_FOR",
-    # Build tools: "SPDXRef-A is used to build SPDXRef-B" (Table 68).
-    # B is the product and A is the tool, so traversal goes from B to A.
-    # Annex A.1 translates it to "B usesTool A".
-    "BUILD_TOOL_OF",
-    # Provenance: "SPDXRef-A generates SPDXRef-B" (Table 68) is the
-    # GENERATED_FROM fact from the source's side. B is the product and A is
-    # its source, so traversal goes from B to A, as for "B GENERATED_FROM A".
-    "GENERATES",
+    name
+    for name, direction in SPDX2_RELATIONSHIP_TRAVERSAL.items()
+    if direction is TraversalDirection.REVERSE
 }
 VALID_SPDX3_COMPOSITION_RELATIONSHIPS = {
-    # Composition
-    "contains",
-    "hasOptionalComponent",
-    "packagedBy",
-    # Dependencies
-    "dependsOn",
-    "hasDynamicLink",
-    "hasStaticLink",
-    "hasPrerequisite",
-    "hasOptionalDependency",
-    "hasProvidedDependency",
+    name
+    for name, direction in SPDX3_RELATIONSHIP_TRAVERSAL.items()
+    if direction is TraversalDirection.FORWARD
 }
 
 SUPPORTED_COMPLIANCE_STANDARDS_DESC = {

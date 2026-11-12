@@ -40,9 +40,15 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Changed
 
-- SPDX 2 `BUILD_TOOL_OF`, `GENERATED_FROM` and `GENERATES` relationships now
-  connect elements to the relationship graph: from the product to the tool or
-  the source
+- SPDX 3 `usesTool` and `generates` relationships, and SPDX 2
+  `BUILD_TOOL_OF`, `DEV_TOOL_OF`, `TEST_TOOL_OF`, `GENERATED_FROM` and
+  `GENERATES` relationships, now connect elements to the relationship graph:
+  from the product to the tool or the source
+- SPDX 2 relationship types are followed in the direction derived from their
+  SPDX 3 translation in SPDX 3.0 Annex A.1, so the same SBOM gives the same
+  result in SPDX 2 and SPDX 3; `SPDX2_RELATIONSHIP_TRAVERSAL` and
+  `SPDX3_RELATIONSHIP_TRAVERSAL` in `constants.py` hold the direction of each
+  type
 - An SPDX 2 composition or dependency relationship whose `spdxElementId` is
   missing is now reported as pointing to a missing element
   (SPDX 2.3 clause 11.1, Table 69)
