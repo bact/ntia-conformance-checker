@@ -275,10 +275,12 @@ def test_spdx2_relationship_to_missing_element(
     ("target", "unknown"),
     [
         ("DocumentRef-other:SPDXRef-Package-B", False),
-        ("DocumentRef-other", False),
+        ("DocumentRef-other:SPDXRef-DOCUMENT", False),
         ("DocumentRef-undeclared:SPDXRef-Package-B", True),
+        ("DocumentRef-other", True),  # not ["DocumentRef-"[idstring]":"]SPDXID
+        ("DocumentRef-other:", True),
     ],
-    ids=["declared-element", "declared-document", "undeclared"],
+    ids=["declared-element", "declared-document", "undeclared", "bare", "empty"],
 )
 def test_spdx2_external_document_ref_elements_are_known(
     target: str, unknown: bool

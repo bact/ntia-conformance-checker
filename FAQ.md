@@ -32,22 +32,94 @@ The checker safely ignores these floating elements during compliance
 validation, but it is a sign that the tool which generated your SBOM may be
 leaving unlinked "garbage" data in the file.
 
-For SPDX 2, the checker follows these relationships from parent to child:
+**Q: Which SPDX 2 relationships connect an element to the tree?**
+
+A: References are to the [SPDX 2.3 specification][spdx-2.3] and, where it
+gives no answer, to the SPDX 3.0
+[Annex A.1 "Relationship" translation table][spdx-3.0-a1].
+
+The roots are the elements that the document describes:
+`SPDXRef-DOCUMENT DESCRIBES A` or `A DESCRIBED_BY SPDXRef-DOCUMENT`
+(SPDX 2.3 clause 11.1, Table 68). `SPDXRef-DOCUMENT` is the document's own ID
+(clause 6.3).
+
+From the roots, the checker follows relationships from parent to child.
+It follows these forward relationships from the element to the related
+element:
 
 - `DESCRIBES`, `CONTAINS`, `DEPENDS_ON`, `DYNAMIC_LINK`, `STATIC_LINK` and
-  `HAS_PREREQUISITE`, from the element to the related element
+  `HAS_PREREQUISITE`
+
+Table 68 describes each of them from the parent's side, such as
+"SPDXRef-A contains SPDXRef-B".
+
+It follows these reverse relationships from the related element to the
+element:
+
 - `CONTAINED_BY`, `OPTIONAL_COMPONENT_OF`, `PACKAGE_OF`, `DEPENDENCY_OF`,
   `BUILD_DEPENDENCY_OF`, `DEV_DEPENDENCY_OF`, `OPTIONAL_DEPENDENCY_OF`,
   `PROVIDED_DEPENDENCY_OF`, `RUNTIME_DEPENDENCY_OF`, `TEST_DEPENDENCY_OF` and
-  `PREREQUISITE_FOR`, from the related element to the element
+  `PREREQUISITE_FOR`
 
-Other relationships, such as `BUILD_TOOL_OF` or `GENERATED_FROM`, do not
-connect an element to the tree.
+SPDX 2.3 does not say that one relationship type is the inverse of another.
+This is our reading:
+
+- Table 68 describes each reverse type as the same fact from the child's side.
+  For example, "SPDXRef-A is contained by SPDXRef-B" states what
+  "SPDXRef-B contains SPDXRef-A" states.
+- Annex A.1 translates each reverse type to an SPDX 3 type that the checker
+  follows for SPDX 3, with "Swap to and from? Y". For example,
+  `BUILD_DEPENDENCY_OF` becomes `dependsOn` with the build lifecycle scope,
+  from the related element to the element. Following them gives the same
+  result for an SBOM in SPDX 2 and in SPDX 3.
+- SBOM generators write either form. If the checker ignored the reverse form,
+  it would skip the components that a generator links that way.
+
+The checker does not follow other relationships, such as `BUILD_TOOL_OF`,
+`DEV_TOOL_OF`, `TEST_TOOL_OF`, `GENERATED_FROM` or `DESCENDANT_OF`. They describe
+how an element was built or where it came from, not what it is made of or
+what it needs. Annex A.1 translates the tool relationships to `usesTool`,
+which the checker also does not follow for SPDX 3.
+
+Annex A.1 also marks `DYNAMIC_LINK` as "Swap to and from? Y", but not
+`STATIC_LINK`. Table 68 describes both the same way: "SPDXRef-A dynamically
+links to SPDXRef-B" and "SPDXRef-A statically links to SPDXRef-B". The checker
+follows the SPDX 2.3 text and treats both as forward relationships.
 
 **Q: The CLI output reports that a relationship points to a missing element.
 What does this mean?**
 
-A: A composition or dependency relationship refers to an element that is not
-defined in the SBOM. In SPDX 2, an element in another document, written as
-`DocumentRef-<id>:SPDXRef-<id>`, is not missing when the document declares
-`DocumentRef-<id>` in an `ExternalDocumentRef`.
+A: A relationship that the checker follows refers to an element that the SBOM
+does not define. SPDX 2.3 clause 11.1 (Table 69) gives the format of a
+relationship as:
+
+```text
+["DocumentRef-"[idstring]":"]SPDXID <relationship>
+    ["DocumentRef-"[idstring]":"]SPDXID | NONE | NOASSERTION
+```
+
+The checker reads this as follows:
+
+- Either end can be an SPDX ID, so either end can be missing. When the
+  `spdxElementId` is missing, the error is reported from the related element.
+- `NONE` means there are no other relationships and `NOASSERTION` means it is
+  not known whether there are any (Table 69). Neither is an element, so neither
+  is missing.
+- `DocumentRef-<id>:SPDXRef-<id>` refers to an element in another SPDX
+  document. Table 69 calls the prefix "an optional reference to an external
+  SPDX Document as described in 6.6". Clause 6.6 (External document
+  references field) declares `DocumentRef-<id>` in an `ExternalDocumentRef`.
+  If `DocumentRef-<id>` is declared, the element is not missing. If it is not
+  declared, the element is missing.
+- The external document itself is `DocumentRef-<id>:SPDXRef-DOCUMENT`, as in
+  the Annex A.1 "External Document Reference" translation. A bare
+  `DocumentRef-<id>` does not match the format, so it is reported as missing.
+
+The checker does not download or read external documents. Clause 6.6 gives a
+URI and a checksum for each one, but the document may not be reachable, and
+fetching it would make the result depend on the network. The checker trusts
+the declaration instead. An external element is not a component of this SBOM,
+so the checker neither checks it for conformance nor reports it as floating.
+
+[spdx-2.3]: https://spdx.github.io/spdx-spec/v2.3.1/
+[spdx-3.0-a1]: https://github.com/spdx/using/blob/main/docs/diffs-from-previous-editions.md

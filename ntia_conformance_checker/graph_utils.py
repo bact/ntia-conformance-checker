@@ -32,7 +32,8 @@ def _collect_spdx2_external_document_ref_ids(spdx2_doc: "Document") -> set[str]:
     """
     Retrieve the IDs of external documents declared in an SPDX 2 document.
 
-    These are the ``DocumentRef-<idstring>`` values of ``ExternalDocumentRef``.
+    These are the ``DocumentRef-<idstring>`` values of ``ExternalDocumentRef``
+    (SPDX 2.3 clause 6.6, External document references field).
 
     Returns:
         set[str]: Declared external document reference IDs.
@@ -50,24 +51,25 @@ def _is_spdx2_external_element_id(
     element_id: str, external_doc_ref_ids: set[str]
 ) -> bool:
     """
-    Check whether an SPDX 2 element ID refers to a declared external document.
+    Check whether an SPDX 2 element ID refers to an element in a declared external document.
 
-    SPDX 2 refers to an element in another document as
-    ``DocumentRef-<idstring>:SPDXRef-<idstring>``. Such an element is defined
-    in the external document, not in this one, so it exists when its
-    ``DocumentRef-<idstring>`` prefix is declared by an ``ExternalDocumentRef``.
-    A bare ``DocumentRef-<idstring>`` refers to the external document itself.
+    SPDX 2.3 clause 11.1 (Table 69) writes either end of a relationship as
+    ``["DocumentRef-"[idstring]":"]SPDXID``, where the optional prefix is
+    "a reference to an external SPDX Document as described in 6.6".
+    Clause 6.6 declares that prefix in an ``ExternalDocumentRef``.
+    The element is defined in the external document, not in this one, so it
+    exists when its prefix is declared. The external document itself is
+    ``DocumentRef-<idstring>:SPDXRef-DOCUMENT``.
 
     Args:
         element_id: Element ID used in a relationship.
         external_doc_ref_ids: Declared external document reference IDs.
 
     Returns:
-        bool: True if the ID refers to a declared external document or an
-            element in it.
+        bool: True if the ID is ``<declared DocumentRef>:<SPDXID>``.
     """
-    doc_ref_id = element_id.split(":", 1)[0]
-    return doc_ref_id in external_doc_ref_ids
+    doc_ref_id, separator, local_id = element_id.partition(":")
+    return bool(separator and local_id) and doc_ref_id in external_doc_ref_ids
 
 
 def _collect_spdx2_known_and_package_ids(
@@ -192,6 +194,11 @@ def _find_spdx2_unknown_pointer_edges(
     """
     Find SPDX 2 composition relationships that point to a missing element.
 
+    SPDX 2.3 clause 11.1 (Table 69) allows an SPDX ID at both ends of a
+    relationship, so either end can be missing. ``NONE`` and ``NOASSERTION``
+    state that there are no relationships or that it is not known; they are
+    not elements and are never missing.
+
     Each relationship is reported as written in the document, from its
     ``spdxElementId`` to its ``relatedSpdxElement``, so a reverse relationship
     such as ``A DEPENDENCY_OF B`` with B missing is reported as A to B.
@@ -242,10 +249,14 @@ def _build_spdx2_graph(spdx2_doc: "Document") -> tuple[list[str], dict[str, list
     """
     Build the initial queue and connection map for SPDX 2.
 
+    Roots are the elements that the document describes: ``SPDXRef-DOCUMENT
+    DESCRIBES A`` or ``A DESCRIBED_BY SPDXRef-DOCUMENT`` (SPDX 2.3 clause 11.1,
+    Table 68; the document ID is from clause 6.3).
+
     Edges point from parent to child. A forward relationship such as
     ``A CONTAINS B`` adds an edge from A to B. A reverse relationship such as
     ``B CONTAINED_BY A`` or ``B BUILD_DEPENDENCY_OF A`` also adds an edge
-    from A to B.
+    from A to B. See ``VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS`` for why.
     """
     queue: list[str] = []
     graph_connection_map: dict[str, list[str]] = {}

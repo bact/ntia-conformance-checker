@@ -11,6 +11,12 @@ SUPPORTED_SBOM_SPECS_DESC = {
 DEFAULT_SBOM_SPEC = "spdx2"
 SUPPORTED_SBOM_SPECS = set(SUPPORTED_SBOM_SPECS_DESC.keys())
 
+# SPDX 2 relationships of the form "A <type> B" where A is the parent
+# (the composite or the dependent) and B is the child.
+# Their SPDX 2.3 clause 11.1 (Table 68) descriptions read
+# "SPDXRef-A contains SPDXRef-B", "SPDXRef-A depends on SPDXRef-B", and so on.
+# DYNAMIC_LINK is forward: Table 68 says "SPDXRef-A dynamically links to
+# SPDXRef-B", although the SPDX 3.0 Annex A.1 table marks it as swapped.
 VALID_SPDX2_COMPOSITION_RELATIONSHIPS = {
     "DESCRIBES",
     "CONTAINS",
@@ -22,6 +28,14 @@ VALID_SPDX2_COMPOSITION_RELATIONSHIPS = {
 # SPDX 2 relationships of the form "A <type> B" where B is the parent
 # (the composite or the dependent) and A is the child. Traversal follows
 # them from B to A, as it follows "B CONTAINS A" or "B DEPENDS_ON A".
+# SPDX 2.3 clause 11.1 (Table 68) describes each from the child's side,
+# such as "SPDXRef-A is contained by SPDXRef-B", but does not say that it is
+# the inverse of another type. The SPDX 3.0 Annex A.1 "Relationship"
+# translation table maps each to a type in
+# VALID_SPDX3_COMPOSITION_RELATIONSHIPS with "Swap to and from? Y", so
+# following them keeps SPDX 2 and SPDX 3 results the same.
+# Tool relationships such as BUILD_TOOL_OF map to usesTool, which is not
+# composition, so they are not listed.
 VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS = {
     # Composition
     "CONTAINED_BY",

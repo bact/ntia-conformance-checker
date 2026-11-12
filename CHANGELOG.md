@@ -27,17 +27,22 @@ and this project adheres to [Semantic Versioning][semver].
   such as `DocumentRef-other:SPDXRef-Package-B`, is no longer reported as
   pointing to a missing element when `DocumentRef-other` is declared in an
   `ExternalDocumentRef` ([#482])
-- An SPDX 2 composition relationship whose `spdxElementId` is missing is now
-  reported as pointing to a missing element
 
 ### Added
 
+- `FAQ.md` explains which SPDX 2 relationships connect an element to the
+  relationship graph and when an element counts as missing, with references
+  to SPDX 2.3 clauses 6.3, 6.6 and 11.1 and to the SPDX 3.0 Annex A.1
+  translation tables
 - GitHub releases attach the wheel, the sdist and the wheel's SPDX 3 SBOM,
   each with a Sigstore bundle and a build provenance attestation;
   see "Verify release files" in `SECURITY.md`
 
 ### Changed
 
+- An SPDX 2 composition or dependency relationship whose `spdxElementId` is
+  missing is now reported as pointing to a missing element
+  (SPDX 2.3 clause 11.1, Table 69)
 - Pull request and release builds embed the SBOM with Pitloom 0.20.1 and fail
   on an invalid SBOM; content types are detected with magika
 - Releases publish to PyPI only after the SBOM is validated; release files are
