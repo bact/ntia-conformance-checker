@@ -12,12 +12,62 @@ from spdx_tools.spdx.model.relationship import RelationshipType
 
 from .constants import (
     VALID_SPDX2_COMPOSITION_RELATIONSHIPS,
+    VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS,
     VALID_SPDX3_COMPOSITION_RELATIONSHIPS,
 )
 from .spdx3_utils import SPDX3_INDIVIDUAL_ELEMENT_IRIS
 
 if TYPE_CHECKING:
     from spdx_tools.spdx.model.document import Document
+
+
+def _get_spdx2_doc_id(spdx2_doc: "Document") -> str:
+    """Return the SPDX ID of an SPDX 2 document, ``SPDXRef-DOCUMENT`` by default."""
+    creation_info = getattr(spdx2_doc, "creation_info", None)
+    doc_id = getattr(creation_info, "spdx_id", None)
+    return doc_id if isinstance(doc_id, str) and doc_id else "SPDXRef-DOCUMENT"
+
+
+def _collect_spdx2_external_document_ref_ids(spdx2_doc: "Document") -> set[str]:
+    """
+    Retrieve the IDs of external documents declared in an SPDX 2 document.
+
+    These are the ``DocumentRef-<idstring>`` values of ``ExternalDocumentRef``.
+
+    Returns:
+        set[str]: Declared external document reference IDs.
+    """
+    creation_info = getattr(spdx2_doc, "creation_info", None)
+    ext_refs = getattr(creation_info, "external_document_refs", None) or []
+    return {
+        ref.document_ref_id
+        for ref in ext_refs
+        if isinstance(getattr(ref, "document_ref_id", None), str)
+    }
+
+
+def _is_spdx2_external_element_id(
+    element_id: str, external_doc_ref_ids: set[str]
+) -> bool:
+    """
+    Check whether an SPDX 2 element ID refers to a declared external document.
+
+    SPDX 2 refers to an element in another document as
+    ``DocumentRef-<idstring>:SPDXRef-<idstring>``. Such an element is defined
+    in the external document, not in this one, so it exists when its
+    ``DocumentRef-<idstring>`` prefix is declared by an ``ExternalDocumentRef``.
+    A bare ``DocumentRef-<idstring>`` refers to the external document itself.
+
+    Args:
+        element_id: Element ID used in a relationship.
+        external_doc_ref_ids: Declared external document reference IDs.
+
+    Returns:
+        bool: True if the ID refers to a declared external document or an
+            element in it.
+    """
+    doc_ref_id = element_id.split(":", 1)[0]
+    return doc_ref_id in external_doc_ref_ids
 
 
 def _collect_spdx2_known_and_package_ids(
@@ -29,11 +79,7 @@ def _collect_spdx2_known_and_package_ids(
     Returns:
         tuple: (all_known_ids, all_package_ids)
     """
-    doc_id = "SPDXRef-DOCUMENT"
-    if getattr(spdx2_doc, "creation_info", None) and getattr(
-        spdx2_doc.creation_info, "spdx_id", None
-    ):
-        doc_id = spdx2_doc.creation_info.spdx_id
+    doc_id = _get_spdx2_doc_id(spdx2_doc)
 
     package_ids = {
         pkg.spdx_id
@@ -97,25 +143,32 @@ def analyze_graph_connectivity(
     )
     all_known_ids: set[str] = set()
     all_package_ids: set[str] = set()
+    unknown_pointer_edges: dict[str, list[str]] = {}
 
     if sbom_spec == "spdx2":
-        all_known_ids, all_package_ids = _collect_spdx2_known_and_package_ids(
-            cast("Document", parsed_data)
+        spdx2_doc = cast("Document", parsed_data)
+        all_known_ids, all_package_ids = _collect_spdx2_known_and_package_ids(spdx2_doc)
+        external_doc_ref_ids = _collect_spdx2_external_document_ref_ids(spdx2_doc)
+        # Elements in declared external documents exist, but not in this one
+        all_known_ids |= {
+            node_id
+            for node_id in reachable_node_ids
+            if _is_spdx2_external_element_id(node_id, external_doc_ref_ids)
+        }
+        unknown_pointer_edges = _find_spdx2_unknown_pointer_edges(
+            spdx2_doc, all_known_ids, external_doc_ref_ids
         )
     elif sbom_spec == "spdx3":
         all_known_ids, all_package_ids = _collect_spdx3_known_and_package_ids(
             cast("spdx3.SHACLObjectSet", parsed_data)
         )
+        # Find exactly which edges point to unknown nodes
+        for source_id, target_ids in connection_map.items():
+            missing_targets = [t for t in target_ids if t not in all_known_ids]
+            if missing_targets:
+                unknown_pointer_edges[source_id] = missing_targets
 
     reachable_component_ids = reachable_node_ids & all_package_ids
-
-    # Find exactly which edges point to unknown nodes
-    unknown_pointer_edges: dict[str, list[str]] = {}
-    for source_id, target_ids in connection_map.items():
-        missing_targets = [t for t in target_ids if t not in all_known_ids]
-        if missing_targets:
-            unknown_pointer_edges[source_id] = missing_targets
-
     floating_component_ids = all_package_ids - reachable_component_ids
     has_unknown_pointers = bool(unknown_pointer_edges)
 
@@ -133,19 +186,74 @@ def analyze_graph_connectivity(
     )
 
 
+def _find_spdx2_unknown_pointer_edges(
+    spdx2_doc: "Document", all_known_ids: set[str], external_doc_ref_ids: set[str]
+) -> dict[str, list[str]]:
+    """
+    Find SPDX 2 composition relationships that point to a missing element.
+
+    Each relationship is reported as written in the document, from its
+    ``spdxElementId`` to its ``relatedSpdxElement``, so a reverse relationship
+    such as ``A DEPENDENCY_OF B`` with B missing is reported as A to B.
+    A relationship whose ``spdxElementId`` is missing while its
+    ``relatedSpdxElement`` is known is reported from the known element.
+
+    Args:
+        spdx2_doc: Parsed SPDX 2 document.
+        all_known_ids: IDs of the elements defined in the document.
+        external_doc_ref_ids: Declared external document reference IDs.
+
+    Returns:
+        dict[str, list[str]]: Known element ID to the missing element IDs it
+            links to.
+    """
+
+    def is_known(element_id: str) -> bool:
+        return element_id in all_known_ids or _is_spdx2_external_element_id(
+            element_id, external_doc_ref_ids
+        )
+
+    unknown_pointer_edges: dict[str, list[str]] = {}
+    for rel in getattr(spdx2_doc, "relationships", None) or []:
+        source_id = rel.spdx_element_id
+        target_id = rel.related_spdx_element_id
+        # NONE and NOASSERTION are not str and point to no element
+        if not isinstance(source_id, str) or not isinstance(target_id, str):
+            continue
+        rel_name = rel.relationship_type.name
+        if (
+            rel_name not in VALID_SPDX2_COMPOSITION_RELATIONSHIPS
+            and rel_name not in VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS
+        ):
+            continue
+
+        if not is_known(target_id):
+            missing_targets = unknown_pointer_edges.setdefault(source_id, [])
+            if target_id not in missing_targets:
+                missing_targets.append(target_id)
+        elif not is_known(source_id):
+            missing_sources = unknown_pointer_edges.setdefault(target_id, [])
+            if source_id not in missing_sources:
+                missing_sources.append(source_id)
+    return unknown_pointer_edges
+
+
 def _build_spdx2_graph(spdx2_doc: "Document") -> tuple[list[str], dict[str, list[str]]]:
-    """Build the initial queue and connection map for SPDX 2."""
+    """
+    Build the initial queue and connection map for SPDX 2.
+
+    Edges point from parent to child. A forward relationship such as
+    ``A CONTAINS B`` adds an edge from A to B. A reverse relationship such as
+    ``B CONTAINED_BY A`` or ``B BUILD_DEPENDENCY_OF A`` also adds an edge
+    from A to B.
+    """
     queue: list[str] = []
     graph_connection_map: dict[str, list[str]] = {}
 
     if not spdx2_doc.relationships:
         return queue, graph_connection_map
 
-    doc_id = "SPDXRef-DOCUMENT"
-    if getattr(spdx2_doc, "creation_info", None) and getattr(
-        spdx2_doc.creation_info, "spdx_id", None
-    ):
-        doc_id = spdx2_doc.creation_info.spdx_id
+    doc_id = _get_spdx2_doc_id(spdx2_doc)
 
     for rel in spdx2_doc.relationships:
         source_id = rel.spdx_element_id
@@ -168,10 +276,11 @@ def _build_spdx2_graph(spdx2_doc: "Document") -> tuple[list[str], dict[str, list
             queue.append(source_id)
 
         # Build the graph connection map
-        if rel.relationship_type.name in VALID_SPDX2_COMPOSITION_RELATIONSHIPS:
-            if source_id not in graph_connection_map:
-                graph_connection_map[source_id] = []
-            graph_connection_map[source_id].append(target_id)
+        rel_name = rel.relationship_type.name
+        if rel_name in VALID_SPDX2_COMPOSITION_RELATIONSHIPS:
+            graph_connection_map.setdefault(source_id, []).append(target_id)
+        elif rel_name in VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS:
+            graph_connection_map.setdefault(target_id, []).append(source_id)
     return queue, graph_connection_map
 
 

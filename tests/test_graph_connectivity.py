@@ -14,13 +14,18 @@ from unittest.mock import MagicMock
 
 import pytest
 from spdx_python_model.bindings import v3_0_1 as spdx3
+from spdx_tools.spdx.model.checksum import Checksum, ChecksumAlgorithm
 from spdx_tools.spdx.model.document import Document
+from spdx_tools.spdx.model.external_document_ref import ExternalDocumentRef
 from spdx_tools.spdx.model.file import File
 from spdx_tools.spdx.model.package import Package
 from spdx_tools.spdx.model.relationship import Relationship, RelationshipType
 from spdx_tools.spdx.model.snippet import Snippet
 
 import ntia_conformance_checker.sbom_checker as sbom_checker
+from ntia_conformance_checker.constants import (
+    VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS,
+)
 from ntia_conformance_checker.graph_utils import (
     analyze_graph_connectivity,
     get_reachable_nodes,
@@ -160,3 +165,176 @@ def test_spdx3_individuals_are_not_unknown_pointers(
     path.write_text(json.dumps(doc), encoding="utf-8")
     sbom = sbom_checker.SbomChecker(str(path), sbom_spec="spdx3")
     assert sbom.has_unknown_pointers is unknown
+
+
+def _make_spdx2_doc(
+    package_ids: list[str],
+    relationships: list[tuple[str, RelationshipType, str]],
+    external_doc_ref_ids: list[str] | None = None,
+) -> MagicMock:
+    """Build a mock SPDX 2 document with packages and relationships."""
+    doc = MagicMock(spec=Document)
+    doc.creation_info = MagicMock()
+    doc.creation_info.spdx_id = "SPDXRef-DOCUMENT"
+    doc.creation_info.external_document_refs = [
+        ExternalDocumentRef(
+            ref_id,
+            f"https://example.com/spdxdocs/{ref_id}",
+            Checksum(
+                ChecksumAlgorithm.SHA1, "d6a770ba38583ed4bb4525bd96e50461655d2759"
+            ),
+        )
+        for ref_id in external_doc_ref_ids or []
+    ]
+    packages = []
+    for package_id in package_ids:
+        pkg = MagicMock(spec=Package)
+        pkg.spdx_id = package_id
+        packages.append(pkg)
+    doc.packages = packages
+    doc.files = list[File]()
+    doc.snippets = list[Snippet]()
+    doc.relationships = [
+        Relationship(source, rel_type, target)
+        for source, rel_type, target in relationships
+    ]
+    return doc
+
+
+@pytest.mark.parametrize(
+    "rel_name", sorted(VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS)
+)
+def test_spdx2_reverse_relationship_connects_child(rel_name: str) -> None:
+    """A reverse relationship "Child X_OF Parent" links Parent to Child."""
+    doc = _make_spdx2_doc(
+        ["SPDXRef-Parent", "SPDXRef-Child"],
+        [
+            ("SPDXRef-DOCUMENT", RelationshipType.DESCRIBES, "SPDXRef-Parent"),
+            ("SPDXRef-Child", RelationshipType[rel_name], "SPDXRef-Parent"),
+        ],
+    )
+    reachable, floating, unknown_edges, has_unknown_pointers = (
+        analyze_graph_connectivity("spdx2", doc)
+    )
+    assert reachable == {"SPDXRef-Parent", "SPDXRef-Child"}
+    assert floating == set()
+    assert not unknown_edges
+    assert has_unknown_pointers is False
+
+
+def test_spdx2_non_composition_reverse_relationship_does_not_connect() -> None:
+    """A tool relationship such as BUILD_TOOL_OF is not a composition edge."""
+    doc = _make_spdx2_doc(
+        ["SPDXRef-Parent", "SPDXRef-Tool"],
+        [
+            ("SPDXRef-DOCUMENT", RelationshipType.DESCRIBES, "SPDXRef-Parent"),
+            ("SPDXRef-Tool", RelationshipType.BUILD_TOOL_OF, "SPDXRef-Parent"),
+        ],
+    )
+    reachable, floating, _, _ = analyze_graph_connectivity("spdx2", doc)
+    assert reachable == {"SPDXRef-Parent"}
+    assert floating == {"SPDXRef-Tool"}
+
+
+@pytest.mark.parametrize(
+    ("relationship", "expected_unknown_edges"),
+    [
+        (
+            ("SPDXRef-A", RelationshipType.BUILD_DEPENDENCY_OF, "SPDXRef-Missing"),
+            {"SPDXRef-A": ["SPDXRef-Missing"]},
+        ),
+        (
+            ("SPDXRef-Missing", RelationshipType.DEPENDENCY_OF, "SPDXRef-A"),
+            {"SPDXRef-A": ["SPDXRef-Missing"]},
+        ),
+        (
+            ("SPDXRef-A", RelationshipType.DEPENDS_ON, "SPDXRef-Missing"),
+            {"SPDXRef-A": ["SPDXRef-Missing"]},
+        ),
+    ],
+    ids=["reverse-missing-parent", "reverse-missing-child", "forward-missing"],
+)
+def test_spdx2_relationship_to_missing_element(
+    relationship: tuple[str, RelationshipType, str],
+    expected_unknown_edges: dict[str, list[str]],
+) -> None:
+    """A composition relationship with a missing end is an unknown pointer."""
+    doc = _make_spdx2_doc(
+        ["SPDXRef-A"],
+        [
+            ("SPDXRef-DOCUMENT", RelationshipType.DESCRIBES, "SPDXRef-A"),
+            relationship,
+        ],
+    )
+    _, _, unknown_edges, has_unknown_pointers = analyze_graph_connectivity("spdx2", doc)
+    assert unknown_edges == expected_unknown_edges
+    assert has_unknown_pointers is True
+
+
+@pytest.mark.parametrize(
+    ("target", "unknown"),
+    [
+        ("DocumentRef-other:SPDXRef-Package-B", False),
+        ("DocumentRef-other", False),
+        ("DocumentRef-undeclared:SPDXRef-Package-B", True),
+    ],
+    ids=["declared-element", "declared-document", "undeclared"],
+)
+def test_spdx2_external_document_ref_elements_are_known(
+    target: str, unknown: bool
+) -> None:
+    """An element in a declared external document is not an unknown pointer."""
+    doc = _make_spdx2_doc(
+        ["SPDXRef-A"],
+        [
+            ("SPDXRef-DOCUMENT", RelationshipType.DESCRIBES, "SPDXRef-A"),
+            ("SPDXRef-A", RelationshipType.DEPENDS_ON, target),
+        ],
+        external_doc_ref_ids=["DocumentRef-other"],
+    )
+    reachable, floating, unknown_edges, has_unknown_pointers = (
+        analyze_graph_connectivity("spdx2", doc)
+    )
+    assert reachable == {"SPDXRef-A"}
+    assert floating == set()
+    assert has_unknown_pointers is unknown
+    assert unknown_edges == ({"SPDXRef-A": [target]} if unknown else {})
+
+
+def test_spdx2_reverse_relationship_file() -> None:
+    """Packages linked only by reverse relationships are not floating (#481)."""
+    test_file = os.path.join(
+        os.path.dirname(__file__),
+        "data",
+        "graph_connectivity",
+        "reverse_relationship",
+        "reverse_relationship_spdx2.json",
+    )
+    sbom = sbom_checker.SbomChecker(test_file, sbom_spec="spdx2")
+    assert sbom.floating_component_ids == set()
+    assert sbom.reachable_component_ids == {
+        "SPDXRef-Package-A",
+        "SPDXRef-Package-Tool",
+        "SPDXRef-Package-Lib",
+        "SPDXRef-Package-Sub",
+        "SPDXRef-Package-Test",
+    }
+    assert sbom.has_unknown_pointers is False
+    assert sbom.compliant is True
+
+
+def test_spdx2_external_document_ref_file() -> None:
+    """A relationship to an external document element is not missing (#482)."""
+    test_file = os.path.join(
+        os.path.dirname(__file__),
+        "data",
+        "graph_connectivity",
+        "external_document_ref",
+        "external_document_ref_spdx2.json",
+    )
+    sbom = sbom_checker.SbomChecker(test_file, sbom_spec="spdx2")
+    assert not sbom.validation_messages
+    assert sbom.has_unknown_pointers is False
+    assert not sbom.unknown_pointer_edges
+    assert sbom.reachable_component_ids == {"SPDXRef-Package-A"}
+    assert sbom.compliant is True
