@@ -6,6 +6,7 @@
 
 import logging
 from collections import deque
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 from spdx_python_model.bindings import v3_0_1 as spdx3
@@ -156,7 +157,7 @@ def _find_unknown_pointer_edges(
     The result maps an element to the missing elements it is linked to:
 
     - If the target is missing, the entry is source to target, whether the
-      source is known or not.
+      source is known or not. If both are missing, the key is missing too.
     - If only the source is missing, the entry is target to source, so that
       the entry starts from the element that exists.
 
@@ -215,24 +216,48 @@ def _get_known_predicate_and_package_ids(
     return lambda _: False, set()
 
 
-def analyze_graph_connectivity(
-    sbom_spec: str, parsed_data: Any, spdx3_doc: Any = None
-) -> tuple[set[str], set[str], dict[str, list[str]], bool]:
+@dataclass(frozen=True)
+class GraphConnectivity:
     """
-    Analyze graph connectivity to find reachable components and unknown pointers.
+    Result of a graph connectivity analysis.
+
+    Attributes:
+        reachable_component_ids: Packages reachable from the roots.
+        floating_component_ids: Packages not reachable from the roots.
+        unknown_pointer_edges: Element ID to the missing element IDs it is
+            linked to (see ``_find_unknown_pointer_edges``). A key is itself
+            missing when both ends of a link are missing.
+        missing_element_ids: IDs of all missing elements, keys and values of
+            ``unknown_pointer_edges`` alike.
+    """
+
+    reachable_component_ids: set[str] = field(default_factory=set)
+    floating_component_ids: set[str] = field(default_factory=set)
+    unknown_pointer_edges: dict[str, list[str]] = field(default_factory=dict)
+    missing_element_ids: set[str] = field(default_factory=set)
+
+    @property
+    def has_unknown_pointers(self) -> bool:
+        """Whether a root or a followed relationship links to a missing element."""
+        return bool(self.unknown_pointer_edges)
+
+
+def analyze_graph(
+    sbom_spec: str, parsed_data: Any, spdx3_doc: Any = None
+) -> GraphConnectivity:
+    """
+    Analyze graph connectivity to find reachable components and missing elements.
 
     Connectivity is evaluated at the component (package) level because
     components represent the primary unit of software conformance in
     minimum elements standards.
 
     Returns:
-        tuple: (reachable_component_ids, floating_component_ids,
-            unknown_pointer_edges, has_unknown_pointers), where
-            unknown_pointer_edges maps an element to the missing elements it
-            is linked to (see ``_find_unknown_pointer_edges``).
+        GraphConnectivity: Reachable and floating components, links to
+            missing elements and the missing element IDs.
     """
     if not parsed_data or (sbom_spec == "spdx3" and not spdx3_doc):
-        return set(), set(), {}, False
+        return GraphConnectivity()
 
     reachable_node_ids, _, links = _reach(sbom_spec, parsed_data, spdx3_doc)
 
@@ -240,22 +265,51 @@ def analyze_graph_connectivity(
         sbom_spec, parsed_data
     )
     unknown_pointer_edges = _find_unknown_pointer_edges(links, is_known)
+    missing_element_ids = {
+        element_id
+        for source_id, target_ids in unknown_pointer_edges.items()
+        for element_id in (source_id, *target_ids)
+        if not is_known(element_id)
+    }
 
     reachable_component_ids = reachable_node_ids & all_package_ids
-    floating_component_ids = all_package_ids - reachable_component_ids
-    has_unknown_pointers = bool(unknown_pointer_edges)
+    result = GraphConnectivity(
+        reachable_component_ids=reachable_component_ids,
+        floating_component_ids=all_package_ids - reachable_component_ids,
+        unknown_pointer_edges=unknown_pointer_edges,
+        missing_element_ids=missing_element_ids,
+    )
 
-    if not has_unknown_pointers and not all(map(is_known, reachable_node_ids)):
+    if not result.has_unknown_pointers and not all(map(is_known, reachable_node_ids)):
         logging.error(
             "Traversal bug: BFS reached a node that is not known, "
             "but unknown_pointer_edges did not record it."
         )
 
+    return result
+
+
+def analyze_graph_connectivity(
+    sbom_spec: str, parsed_data: Any, spdx3_doc: Any = None
+) -> tuple[set[str], set[str], dict[str, list[str]], bool]:
+    """
+    Analyze graph connectivity to find reachable components and unknown pointers.
+
+    Kept for compatibility; ``analyze_graph`` also returns the missing
+    element IDs.
+
+    Returns:
+        tuple: (reachable_component_ids, floating_component_ids,
+            unknown_pointer_edges, has_unknown_pointers), where
+            unknown_pointer_edges maps an element to the missing elements it
+            is linked to (see ``_find_unknown_pointer_edges``).
+    """
+    result = analyze_graph(sbom_spec, parsed_data, spdx3_doc)
     return (
-        reachable_component_ids,
-        floating_component_ids,
-        unknown_pointer_edges,
-        has_unknown_pointers,
+        result.reachable_component_ids,
+        result.floating_component_ids,
+        result.unknown_pointer_edges,
+        result.has_unknown_pointers,
     )
 
 

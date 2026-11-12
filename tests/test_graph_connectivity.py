@@ -32,6 +32,7 @@ from ntia_conformance_checker.constants import (
     TraversalDirection,
 )
 from ntia_conformance_checker.graph_utils import (
+    analyze_graph,
     analyze_graph_connectivity,
     get_reachable_nodes,
 )
@@ -715,3 +716,74 @@ def test_deprecated_relationship_sets_are_unchanged() -> None:
     }
     assert "usesTool" not in VALID_SPDX3_COMPOSITION_RELATIONSHIPS
     assert "generates" not in VALID_SPDX3_COMPOSITION_RELATIONSHIPS
+
+
+@pytest.mark.parametrize(
+    ("relationship", "expected_missing"),
+    [
+        (
+            ("SPDXRef-A", RelationshipType.DEPENDS_ON, "SPDXRef-Missing"),
+            {"SPDXRef-Missing"},
+        ),
+        (
+            ("SPDXRef-Missing", RelationshipType.DEPENDS_ON, "SPDXRef-A"),
+            {"SPDXRef-Missing"},
+        ),
+        (
+            ("SPDXRef-Missing1", RelationshipType.DEPENDS_ON, "SPDXRef-Missing2"),
+            {"SPDXRef-Missing1", "SPDXRef-Missing2"},
+        ),
+    ],
+    ids=["target-missing", "source-missing", "both-missing"],
+)
+def test_analyze_graph_lists_missing_element_ids(
+    relationship: tuple[str, RelationshipType, str], expected_missing: set[str]
+) -> None:
+    """Every missing element is listed, a missing source of a link included."""
+    doc = _make_spdx2_doc(
+        ["SPDXRef-A"],
+        [
+            ("SPDXRef-DOCUMENT", RelationshipType.DESCRIBES, "SPDXRef-A"),
+            relationship,
+        ],
+    )
+    result = analyze_graph("spdx2", doc)
+    assert result.missing_element_ids == expected_missing
+    assert result.has_unknown_pointers is True
+    assert analyze_graph_connectivity("spdx2", doc) == (
+        result.reachable_component_ids,
+        result.floating_component_ids,
+        result.unknown_pointer_edges,
+        True,
+    )
+
+
+def test_missing_source_is_reported_end_to_end(tmp_path: Path) -> None:
+    """The checker reports a link with both ends missing as such, in all outputs."""
+    src = (
+        Path(__file__).parent
+        / "data"
+        / "graph_connectivity"
+        / "reverse_relationship"
+        / "reverse_relationship_spdx2.json"
+    )
+    doc = json.loads(src.read_text(encoding="utf-8"))
+    doc["relationships"].append(
+        {
+            "spdxElementId": "SPDXRef-Ghost1",
+            "relationshipType": "DEPENDS_ON",
+            "relatedSpdxElement": "SPDXRef-Ghost2",
+        }
+    )
+    path = tmp_path / "sbom.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    sbom = sbom_checker.SbomChecker(str(path), sbom_spec="spdx2")
+
+    assert sbom.missing_element_ids == {"SPDXRef-Ghost1", "SPDXRef-Ghost2"}
+    assert sbom.output_json()["graphValidation"]["unknownPointers"][
+        "missingElementIds"
+    ] == ["SPDXRef-Ghost1", "SPDXRef-Ghost2"]
+    assert (
+        "Missing element '<b>SPDXRef-Ghost1</b>' links to missing element "
+        "'<b>SPDXRef-Ghost2</b>'" in sbom.output_html()
+    )

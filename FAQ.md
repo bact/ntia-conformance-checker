@@ -155,6 +155,7 @@ and checks the same things for SPDX 2 and SPDX 3:
 | --- | --- | --- |
 | Followed relationship `A <type> B`, B missing | Yes | "Component 'A' links to missing element 'B'" |
 | Followed relationship `A <type> B`, only A missing | Yes | "Component 'B' links to missing element 'A'" |
+| Followed relationship `A <type> B`, both missing | Yes | "Missing element 'A' links to missing element 'B'" |
 | Root missing | Yes | "Component '\<document or collection\>' links to missing element '\<root\>'" |
 | Relationship that the checker does not follow | No | Not checked |
 | `NONE`, `NOASSERTION` (SPDX 2) | No | Not elements (Table 69) |
@@ -167,6 +168,8 @@ and checks the same things for SPDX 2 and SPDX 3:
 <!-- markdownlint-enable MD013 -->
 
 Each missing element is reported once for each element that links to it.
+The JSON output also lists every missing element ID in
+`graphValidation.unknownPointers.missingElementIds`.
 
 `NONE` means there are no other relationships and `NOASSERTION` means it is
 not known whether there are any (Table 69). Neither is an element.

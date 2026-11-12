@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning][semver].
 
 ### Added
 
+- When both ends of a relationship are missing, the report names the source
+  a missing element: "Missing element 'A' links to missing element 'B'",
+  instead of "Component 'A' ..."; the JSON output lists every missing element
+  in `graphValidation.unknownPointers.missingElementIds`
+- `graph_utils.analyze_graph` returns a `GraphConnectivity` result that also
+  holds the missing element IDs; `BaseChecker.missing_element_ids` holds them
+  after a check
 - `FAQ.md` has tables that summarize which SPDX 2 and SPDX 3 relationships
   connect an element to the relationship graph, in which direction, and when
   an element counts as missing, with references to SPDX 2.3 clauses 6.3, 6.6

@@ -38,6 +38,7 @@ class ReportContext:
     conformance_messages: list[ValidationMessage] | None = None
     parsing_errors: list[str] | None = None
     unknown_pointer_edges: dict[str, list[str]] | None = None
+    missing_element_ids: set[str] | None = None
     floating_component_ids: set[str] | None = None
     components_evaluated: bool = True
 
@@ -160,6 +161,20 @@ def get_validation_messages_json(
     return json_output
 
 
+def _link_source_label(rc: ReportContext, source: str) -> str:
+    """
+    Return how to name the source of a link to a missing element.
+
+    The source is "Missing element" when it is missing too, which happens when
+    both ends of a link are missing, and "Component" otherwise.
+    """
+    return (
+        "Missing element"
+        if source in (rc.missing_element_ids or set())
+        else "Component"
+    )
+
+
 def _generate_graph_text_report(rc: ReportContext) -> list[str]:
     """Generates a text report for graph structural issues."""
     graph_issues_report: list[str] = []
@@ -179,8 +194,9 @@ def _generate_graph_text_report(rc: ReportContext) -> list[str]:
         graph_issues_report.append("  -> Broken dependency linkages found:")
         for source, targets in rc.unknown_pointer_edges.items():
             for target in targets:
+                label = _link_source_label(rc, source)
                 graph_issues_report.append(
-                    f"    * Component '{source}' links to missing element '{target}'"
+                    f"    * {label} '{source}' links to missing element '{target}'"
                 )
 
     if rc.floating_component_ids:
@@ -323,8 +339,9 @@ def _generate_graph_html_report(rc: ReportContext) -> list[str]:
         graph_issues_report.append("<ul class='conformance-err-list'>")
         for source, targets in rc.unknown_pointer_edges.items():
             for target in targets:
+                label = _link_source_label(rc, source)
                 graph_issues_report.append(
-                    f"<li>Component '<b>{source}</b>' links to missing element "
+                    f"<li>{label} '<b>{source}</b>' links to missing element "
                     f"'<b>{target}</b>'</li>"
                 )
         graph_issues_report.append("</ul>")
@@ -493,6 +510,9 @@ def report_json(checker_instance: "BaseChecker") -> dict[str, Any]:
                 ),
                 "unknownPointerEdges": getattr(
                     checker_instance, "unknown_pointer_edges", {}
+                ),
+                "missingElementIds": sorted(
+                    getattr(checker_instance, "missing_element_ids", set())
                 ),
             },
             "floatingComponents": {

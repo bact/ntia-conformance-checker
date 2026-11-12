@@ -959,3 +959,34 @@ def test_get_boms_from_spdx_document() -> None:
     boms = get_boms_from_spdx_document(doc_with_bom)
     assert boms
     assert boms == [bom]
+
+
+@pytest.mark.parametrize(
+    ("missing_element_ids", "label"),
+    [
+        ({"SPDXRef-Missing2"}, "Component"),
+        ({"SPDXRef-Missing1", "SPDXRef-Missing2"}, "Missing element"),
+    ],
+    ids=["source-known", "both-missing"],
+)
+def test_generate_graph_report_names_a_missing_source(
+    missing_element_ids: set[str], label: str
+) -> None:
+    """A link whose source is missing too names the source a missing element."""
+    rc = ReportContext(
+        unknown_pointer_edges={"SPDXRef-Missing1": ["SPDXRef-Missing2"]},
+        missing_element_ids=missing_element_ids,
+        floating_component_ids=set(),
+    )
+
+    text = "\n".join(_generate_graph_text_report(rc))
+    html = "\n".join(_generate_graph_html_report(rc))
+
+    assert (
+        f"    * {label} 'SPDXRef-Missing1' links to missing element 'SPDXRef-Missing2'"
+        in text
+    )
+    assert (
+        f"<li>{label} '<b>SPDXRef-Missing1</b>' links to missing element "
+        "'<b>SPDXRef-Missing2</b>'</li>" in html
+    )
