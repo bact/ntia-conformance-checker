@@ -29,6 +29,11 @@ def _get_spdx2_doc_id(spdx2_doc: "Document") -> str:
     return doc_id if isinstance(doc_id, str) and doc_id else "SPDXRef-DOCUMENT"
 
 
+def _get_spdx2_doc_ids(spdx2_doc: "Document") -> set[str]:
+    """Return the IDs that refer to an SPDX 2 document: its own and ``SPDXRef-DOCUMENT``."""
+    return {_get_spdx2_doc_id(spdx2_doc), "SPDXRef-DOCUMENT"}
+
+
 def _collect_spdx2_external_document_ref_ids(spdx2_doc: "Document") -> set[str]:
     """
     Retrieve the IDs of external documents declared in an SPDX 2 document.
@@ -79,10 +84,12 @@ def _collect_spdx2_known_and_package_ids(
     """
     Retrieve known entity IDs (packages, files, snippets, document) and package IDs for SPDX 2.
 
+    The document is known by its own ID and by ``SPDXRef-DOCUMENT``, the ID
+    that clause 6.3 requires and that root detection also accepts.
+
     Returns:
         tuple: (all_known_ids, all_package_ids)
     """
-    doc_id = _get_spdx2_doc_id(spdx2_doc)
 
     package_ids = {
         pkg.spdx_id
@@ -97,7 +104,7 @@ def _collect_spdx2_known_and_package_ids(
         for s in getattr(spdx2_doc, "snippets", [])
         if isinstance(s.spdx_id, str)
     }
-    all_known_ids = package_ids | file_ids | snippet_ids | {doc_id}
+    all_known_ids = package_ids | file_ids | snippet_ids | _get_spdx2_doc_ids(spdx2_doc)
     return all_known_ids, package_ids
 
 
@@ -107,6 +114,12 @@ def _collect_spdx3_known_and_package_ids(
     """
     Retrieve all known object IDs and package IDs for SPDX 3.
 
+    Known IDs are the objects in the document, the SPDX 3 individuals such as
+    ``NoneElement``, and the elements that a collection imports: the
+    ``externalSpdxId`` of each ``ExternalMap`` in ``import``. An imported
+    element is defined elsewhere, as an SPDX 2 element in a declared
+    ``ExternalDocumentRef`` is.
+
     Returns:
         tuple: (all_known_ids, all_package_ids)
     """
@@ -115,6 +128,12 @@ def _collect_spdx3_known_and_package_ids(
         for obj in object_set.objects
         if isinstance(getattr(obj, "spdxId", None), str)
     } | SPDX3_INDIVIDUAL_ELEMENT_IRIS  # NoneElement and the like need no definition
+    all_known_ids |= {
+        external_id
+        for obj in object_set.objects
+        for ext_map in getattr(obj, "import_", None) or []
+        if isinstance(external_id := getattr(ext_map, "externalSpdxId", None), str)
+    }
     package_ids = {
         getattr(obj, "spdxId")
         for obj in object_set.objects
@@ -165,36 +184,35 @@ def _find_unknown_pointer_edges(
     return unknown_pointer_edges
 
 
-def _check_spdx2_ids(
-    spdx2_doc: "Document", reachable_node_ids: set[str], links: list[tuple[str, str]]
-) -> tuple[set[str], set[str], dict[str, list[str]]]:
+def _get_known_predicate_and_package_ids(
+    sbom_spec: str, parsed_data: Any
+) -> tuple[Callable[[str], bool], set[str]]:
     """
-    Collect known and package IDs of an SPDX 2 document and find missing elements.
+    Return whether an element ID refers to an element that exists, and the package IDs.
 
-    An element in a declared external document exists, but not in this
-    document; see ``_is_spdx2_external_element_id``.
-
-    Args:
-        spdx2_doc: Parsed SPDX 2 document.
-        reachable_node_ids: Node IDs reachable from the roots.
-        links: Followed and root relationships as written.
+    For SPDX 2, an element in a declared external document exists, but not in
+    this document; see ``_is_spdx2_external_element_id``.
 
     Returns:
-        tuple: (all_known_ids, all_package_ids, unknown_pointer_edges), where
-            all_known_ids includes reachable elements in declared external
-            documents.
+        tuple: (is_known, all_package_ids)
     """
-    all_known_ids, all_package_ids = _collect_spdx2_known_and_package_ids(spdx2_doc)
-    external_doc_ref_ids = _collect_spdx2_external_document_ref_ids(spdx2_doc)
+    if sbom_spec == "spdx2":
+        spdx2_doc = cast("Document", parsed_data)
+        known_ids, package_ids = _collect_spdx2_known_and_package_ids(spdx2_doc)
+        external_doc_ref_ids = _collect_spdx2_external_document_ref_ids(spdx2_doc)
 
-    def is_known(element_id: str) -> bool:
-        return element_id in all_known_ids or _is_spdx2_external_element_id(
-            element_id, external_doc_ref_ids
+        def is_known(element_id: str) -> bool:
+            return element_id in known_ids or _is_spdx2_external_element_id(
+                element_id, external_doc_ref_ids
+            )
+
+        return is_known, package_ids
+    if sbom_spec == "spdx3":
+        known_ids, package_ids = _collect_spdx3_known_and_package_ids(
+            cast("spdx3.SHACLObjectSet", parsed_data)
         )
-
-    unknown_pointer_edges = _find_unknown_pointer_edges(links, is_known)
-    all_known_ids |= {node_id for node_id in reachable_node_ids if is_known(node_id)}
-    return all_known_ids, all_package_ids, unknown_pointer_edges
+        return known_ids.__contains__, package_ids
+    return lambda _: False, set()
 
 
 def analyze_graph_connectivity(
@@ -216,31 +234,20 @@ def analyze_graph_connectivity(
     if not parsed_data or (sbom_spec == "spdx3" and not spdx3_doc):
         return set(), set(), {}, False
 
-    queue, connection_map, links = _build_graph(sbom_spec, parsed_data, spdx3_doc)
-    reachable_node_ids = _traverse(queue, connection_map)
-    all_known_ids: set[str] = set()
-    all_package_ids: set[str] = set()
-    unknown_pointer_edges: dict[str, list[str]] = {}
+    reachable_node_ids, _, links = _reach(sbom_spec, parsed_data, spdx3_doc)
 
-    if sbom_spec == "spdx2":
-        all_known_ids, all_package_ids, unknown_pointer_edges = _check_spdx2_ids(
-            cast("Document", parsed_data), reachable_node_ids, links
-        )
-    elif sbom_spec == "spdx3":
-        all_known_ids, all_package_ids = _collect_spdx3_known_and_package_ids(
-            cast("spdx3.SHACLObjectSet", parsed_data)
-        )
-        unknown_pointer_edges = _find_unknown_pointer_edges(
-            links, all_known_ids.__contains__
-        )
+    is_known, all_package_ids = _get_known_predicate_and_package_ids(
+        sbom_spec, parsed_data
+    )
+    unknown_pointer_edges = _find_unknown_pointer_edges(links, is_known)
 
     reachable_component_ids = reachable_node_ids & all_package_ids
     floating_component_ids = all_package_ids - reachable_component_ids
     has_unknown_pointers = bool(unknown_pointer_edges)
 
-    if not reachable_node_ids.issubset(all_known_ids) and not has_unknown_pointers:
+    if not has_unknown_pointers and not all(map(is_known, reachable_node_ids)):
         logging.error(
-            "Traversal bug: BFS reached a node absent from all_known_ids, "
+            "Traversal bug: BFS reached a node that is not known, "
             "but unknown_pointer_edges did not record it."
         )
 
@@ -281,7 +288,7 @@ def _build_spdx2_graph(
     graph_connection_map: dict[str, list[str]] = {}
     links: list[tuple[str, str]] = []
 
-    doc_ids = {_get_spdx2_doc_id(spdx2_doc), "SPDXRef-DOCUMENT"}
+    doc_ids = _get_spdx2_doc_ids(spdx2_doc)
 
     for rel in spdx2_doc.relationships or []:
         source_id = rel.spdx_element_id
@@ -462,6 +469,23 @@ def _traverse(queue: list[str], graph_connection_map: dict[str, list[str]]) -> s
     return reachable_node_ids
 
 
+def _reach(
+    sbom_spec: str, parsed_data: Any, spdx3_doc: Any = None
+) -> tuple[set[str], dict[str, list[str]], list[tuple[str, str]]]:
+    """
+    Build the graph and find all nodes reachable from the roots.
+
+    Returns:
+        tuple: (reachable_node_ids, graph_connection_map, links); all empty
+            when there is no data, or no SPDX 3 document.
+    """
+    if not parsed_data or (sbom_spec == "spdx3" and not spdx3_doc):
+        return set(), {}, []
+
+    queue, graph_connection_map, links = _build_graph(sbom_spec, parsed_data, spdx3_doc)
+    return _traverse(queue, graph_connection_map), graph_connection_map, links
+
+
 def get_reachable_nodes(
     sbom_spec: str, parsed_data: Any, spdx3_doc: Any = None
 ) -> tuple[set[str], dict[str, list[str]]]:
@@ -474,8 +498,7 @@ def get_reachable_nodes(
             parent to child. A reverse relationship such as
             ``A CONTAINED_BY B`` is an edge from B to A.
     """
-    if not parsed_data or (sbom_spec == "spdx3" and not spdx3_doc):
-        return set(), {}
-
-    queue, graph_connection_map, _ = _build_graph(sbom_spec, parsed_data, spdx3_doc)
-    return _traverse(queue, graph_connection_map), graph_connection_map
+    reachable_node_ids, graph_connection_map, _ = _reach(
+        sbom_spec, parsed_data, spdx3_doc
+    )
+    return reachable_node_ids, graph_connection_map

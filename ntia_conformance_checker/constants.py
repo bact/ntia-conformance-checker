@@ -119,14 +119,16 @@ SPDX2_TO_SPDX3_RELATIONSHIP_TYPES: dict[str, tuple[str, bool]] = {
 
 # SPDX 2 relationship types whose traversal is not derived from
 # SPDX2_TO_SPDX3_RELATIONSHIP_TYPES:
-# - DESCRIBES: SPDX 3 marks roots with rootElement, so describes is not in
-#   SPDX3_RELATIONSHIP_TRAVERSAL. SPDX 2 has no rootElement, and
-#   "SPDXRef-DOCUMENT describes SPDXRef-A" (Table 68) is followed forward.
-#   DESCRIBED_BY to the document marks a root as well; it is handled where
-#   roots are found, not as an edge.
+# - DESCRIBES and DESCRIBED_BY: SPDX 3 marks roots with rootElement, so
+#   describes is not in SPDX3_RELATIONSHIP_TRAVERSAL. SPDX 2 has no
+#   rootElement. "SPDXRef-DOCUMENT DESCRIBES SPDXRef-A" and
+#   "SPDXRef-A DESCRIBED_BY SPDXRef-DOCUMENT" (Table 68) mark roots, and
+#   between other elements they are followed from the describing element to
+#   the described one, so either form connects the same elements.
 # - DYNAMIC_LINK: the Annex A.1 row is marked swapped; Table 68 reads forward.
 SPDX2_RELATIONSHIP_TRAVERSAL_OVERRIDES: dict[str, TraversalDirection] = {
     "DESCRIBES": TraversalDirection.FORWARD,
+    "DESCRIBED_BY": TraversalDirection.REVERSE,
     "DYNAMIC_LINK": TraversalDirection.FORWARD,
 }
 
@@ -162,25 +164,30 @@ SPDX2_RELATIONSHIP_TRAVERSAL: dict[str, TraversalDirection] = (
     _derive_spdx2_relationship_traversal()
 )
 
-# Relationship type names by traversal direction, kept for compatibility.
-# The names say "composition", but the sets also hold tool and provenance
-# relationships. VALID_SPDX3_COMPOSITION_RELATIONSHIPS holds forward types
-# only, so it does not hold generates. Use SPDX2_RELATIONSHIP_TRAVERSAL and
-# SPDX3_RELATIONSHIP_TRAVERSAL to get every followed type with its direction.
+# Deprecated: the relationship types that version 6.0.0 followed, kept
+# unchanged for compatibility. The checker no longer uses them; use
+# SPDX2_RELATIONSHIP_TRAVERSAL and SPDX3_RELATIONSHIP_TRAVERSAL to get every
+# followed type with its direction.
 VALID_SPDX2_COMPOSITION_RELATIONSHIPS = {
-    name
-    for name, direction in SPDX2_RELATIONSHIP_TRAVERSAL.items()
-    if direction is TraversalDirection.FORWARD
-}
-VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS = {
-    name
-    for name, direction in SPDX2_RELATIONSHIP_TRAVERSAL.items()
-    if direction is TraversalDirection.REVERSE
+    "DESCRIBES",
+    "CONTAINS",
+    "DEPENDS_ON",
+    "DYNAMIC_LINK",
+    "STATIC_LINK",
+    "HAS_PREREQUISITE",
 }
 VALID_SPDX3_COMPOSITION_RELATIONSHIPS = {
-    name
-    for name, direction in SPDX3_RELATIONSHIP_TRAVERSAL.items()
-    if direction is TraversalDirection.FORWARD
+    # Composition
+    "contains",
+    "hasOptionalComponent",
+    "packagedBy",
+    # Dependencies
+    "dependsOn",
+    "hasDynamicLink",
+    "hasStaticLink",
+    "hasPrerequisite",
+    "hasOptionalDependency",
+    "hasProvidedDependency",
 }
 
 SUPPORTED_COMPLIANCE_STANDARDS_DESC = {

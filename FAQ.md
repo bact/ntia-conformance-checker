@@ -62,7 +62,7 @@ and the SPDX 2 types that Annex A.1 translates to it.
 
 | Kind | SPDX 3 type | SPDX 3 direction | SPDX 2 forward types | SPDX 2 reverse types | Parent to child |
 | --- | --- | --- | --- | --- | --- |
-| Root | Any relationship from the `SpdxDocument`, such as `describes` | Root | `DESCRIBES` from `SPDXRef-DOCUMENT`; from any other element, followed forward | `DESCRIBED_BY` to `SPDXRef-DOCUMENT` | Document to described element |
+| Root | Any relationship from the `SpdxDocument`, such as `describes` | Root | `DESCRIBES` from `SPDXRef-DOCUMENT`; between other elements, followed (see the overrides below) | `DESCRIBED_BY` to `SPDXRef-DOCUMENT`; between other elements, followed | Describing element to described element |
 | Root | `rootElement` of a collection | Root | none | none | Collection to root element |
 | Composition | `contains` | Forward | `CONTAINS` | `CONTAINED_BY` | Whole to part |
 | Composition | `hasOptionalComponent` | Forward | none | `OPTIONAL_COMPONENT_OF` | Whole to optional part |
@@ -93,7 +93,8 @@ The roots are:
 
 - SPDX 2: the elements in `SPDXRef-DOCUMENT DESCRIBES A` or
   `A DESCRIBED_BY SPDXRef-DOCUMENT` (SPDX 2.3 clause 11.1, Table 68).
-  `SPDXRef-DOCUMENT` is the document's own ID (clause 6.3).
+  `SPDXRef-DOCUMENT` is the document's own ID (clause 6.3). If the document
+  has another ID, the checker also accepts `SPDXRef-DOCUMENT` for it.
 - SPDX 3: the `rootElement` of the `SpdxDocument` and the `to` elements of
   any relationship from the `SpdxDocument`. Each collection, such as an
   `Sbom`, also links to its own `rootElement`.
@@ -115,11 +116,12 @@ same result. For example:
 
 The checker departs from Annex A.1 in two places:
 
-- `DESCRIBES` is followed forward from any element. Table 68 defines
-  `DESCRIBES` only from `SPDXRef-DOCUMENT`, but SBOMs also use it between
-  other elements. For SPDX 3, the checker makes the `to` elements of any
-  relationship from the `SpdxDocument` roots, but does not follow `describes`
-  from other elements: SPDX 3 marks roots with `rootElement`.
+- `DESCRIBES` is followed forward and `DESCRIBED_BY` in reverse, between any
+  elements, so `B DESCRIBES C` and `C DESCRIBED_BY B` both go from B to C.
+  Table 68 defines them only with `SPDXRef-DOCUMENT`, but SBOMs also use them
+  between other elements. For SPDX 3, the checker makes the `to` elements of
+  any relationship from the `SpdxDocument` roots, but does not follow
+  `describes` from other elements: SPDX 3 marks roots with `rootElement`.
 - `DYNAMIC_LINK` is followed forward. Annex A.1 says "Swap to and from? Y" for
   it, but Table 68 says "SPDXRef-A dynamically links to SPDXRef-B" and
   SPDX 3.0.1 says "The `from` Element dynamically links in each `to` Element".
@@ -157,6 +159,7 @@ and checks the same things for SPDX 2 and SPDX 3:
 | Relationship that the checker does not follow | No | Not checked |
 | `NONE`, `NOASSERTION` (SPDX 2) | No | Not elements (Table 69) |
 | SPDX 3 individuals such as `NoneElement` | No | Defined by SPDX 3 |
+| SPDX 3 element in an `ExternalMap` of an `import` | No | Defined in another document |
 | `DocumentRef-<id>:SPDXID` with `DocumentRef-<id>` declared (SPDX 2) | No | Defined in the external document |
 | `DocumentRef-<id>:SPDXID` with `DocumentRef-<id>` not declared (SPDX 2) | Yes | No such external document |
 | Bare `DocumentRef-<id>` (SPDX 2) | Yes | Does not match the Table 69 format |

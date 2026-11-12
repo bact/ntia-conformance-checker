@@ -28,7 +28,7 @@ from ntia_conformance_checker.constants import (
     SPDX2_TO_SPDX3_RELATIONSHIP_TYPES,
     SPDX3_RELATIONSHIP_TRAVERSAL,
     VALID_SPDX2_COMPOSITION_RELATIONSHIPS,
-    VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS,
+    VALID_SPDX3_COMPOSITION_RELATIONSHIPS,
     TraversalDirection,
 )
 from ntia_conformance_checker.graph_utils import (
@@ -207,7 +207,12 @@ def _make_spdx2_doc(
 
 
 @pytest.mark.parametrize(
-    "rel_name", sorted(VALID_SPDX2_REVERSE_COMPOSITION_RELATIONSHIPS)
+    "rel_name",
+    sorted(
+        name
+        for name, direction in SPDX2_RELATIONSHIP_TRAVERSAL.items()
+        if direction is TraversalDirection.REVERSE
+    ),
 )
 def test_spdx2_reverse_relationship_connects_child(rel_name: str) -> None:
     """A reverse relationship "Child X_OF Parent" links Parent to Child."""
@@ -228,7 +233,12 @@ def test_spdx2_reverse_relationship_connects_child(rel_name: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "rel_name", sorted(VALID_SPDX2_COMPOSITION_RELATIONSHIPS - {"DESCRIBES"})
+    "rel_name",
+    sorted(
+        name
+        for name, direction in SPDX2_RELATIONSHIP_TRAVERSAL.items()
+        if direction is TraversalDirection.FORWARD
+    ),
 )
 def test_spdx2_forward_relationship_connects_child(rel_name: str) -> None:
     """A forward relationship "Parent X Child" links Parent to Child."""
@@ -428,7 +438,7 @@ def test_annex_a1_table_and_traversal_use_spdx3_relationship_types() -> None:
         ("DESCRIBES", TraversalDirection.FORWARD),
         ("DYNAMIC_LINK", TraversalDirection.FORWARD),
         # Not followed
-        ("DESCRIBED_BY", None),
+        ("DESCRIBED_BY", TraversalDirection.REVERSE),
         ("FILE_MODIFIED", None),
         ("OTHER", None),
     ],
@@ -639,3 +649,69 @@ def test_spdx3_missing_from_or_root(
         for k, vs in expected_unknown_edges.items()
     }
     assert "Traversal bug" not in caplog.text
+
+
+def test_spdx2_document_alias_is_known(caplog: pytest.LogCaptureFixture) -> None:
+    """SPDXRef-DOCUMENT is the document even when its ID is different."""
+    doc = _make_spdx2_doc(
+        ["SPDXRef-A"],
+        [("SPDXRef-DOCUMENT", RelationshipType.DESCRIBES, "SPDXRef-A")],
+    )
+    doc.creation_info.spdx_id = "SPDXRef-DOC"
+    reachable, floating, unknown_edges, has_unknown_pointers = (
+        analyze_graph_connectivity("spdx2", doc)
+    )
+    assert reachable == {"SPDXRef-A"}
+    assert floating == set()
+    assert not unknown_edges
+    assert has_unknown_pointers is False
+    assert "Traversal bug" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("relationship", "unknown"),
+    [
+        (("imported-a", "dependsOn", "ROOT"), False),
+        (("ROOT", "dependsOn", "imported-a"), False),
+        (("ROOT", "dependsOn", "missing-b"), True),
+    ],
+    ids=["imported-from", "imported-to", "not-imported"],
+)
+def test_spdx3_imported_element_is_known(
+    tmp_path: Path, relationship: tuple[str, str, str], unknown: bool
+) -> None:
+    """An element in an ExternalMap of the SpdxDocument import is not missing."""
+    doc = json.loads(_SPDX3_BASE_SBOM.read_text(encoding="utf-8"))
+    spdx_doc = next(e for e in doc["@graph"] if e["type"] == "SpdxDocument")
+    spdx_doc["import"] = [
+        {"type": "ExternalMap", "externalSpdxId": "https://example.com/imported-a"}
+    ]
+    from_name, rel_type, to_name = relationship
+    doc["@graph"].append(
+        {
+            "type": "Relationship",
+            "spdxId": "https://example.com/rel-0",
+            "creationInfo": "_:creationinfo",
+            "from": _spdx3_element_id(from_name),
+            "relationshipType": rel_type,
+            "to": [_spdx3_element_id(to_name)],
+        }
+    )
+    path = tmp_path / "sbom.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    sbom = sbom_checker.SbomChecker(str(path), sbom_spec="spdx3")
+    assert sbom.has_unknown_pointers is unknown
+
+
+def test_deprecated_relationship_sets_are_unchanged() -> None:
+    """The deprecated sets keep their 6.0.0 values for compatibility."""
+    assert VALID_SPDX2_COMPOSITION_RELATIONSHIPS == {
+        "DESCRIBES",
+        "CONTAINS",
+        "DEPENDS_ON",
+        "DYNAMIC_LINK",
+        "STATIC_LINK",
+        "HAS_PREREQUISITE",
+    }
+    assert "usesTool" not in VALID_SPDX3_COMPOSITION_RELATIONSHIPS
+    assert "generates" not in VALID_SPDX3_COMPOSITION_RELATIONSHIPS

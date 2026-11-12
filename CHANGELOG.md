@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning][semver].
   such as `DocumentRef-other:SPDXRef-Package-B`, is no longer reported as
   pointing to a missing element when `DocumentRef-other` is declared in an
   `ExternalDocumentRef` ([#482])
+- A relationship to or from an SPDX 3 element that the document imports, in
+  the `externalSpdxId` of an `ExternalMap`, is no longer reported as pointing
+  to a missing element
+- `SPDXRef-DOCUMENT` is known as the SPDX 2 document even when the document
+  has another ID, as root detection already accepted
 
 ### Added
 
@@ -49,6 +54,8 @@ and this project adheres to [Semantic Versioning][semver].
   result in SPDX 2 and SPDX 3; `SPDX2_RELATIONSHIP_TRAVERSAL` and
   `SPDX3_RELATIONSHIP_TRAVERSAL` in `constants.py` hold the direction of each
   type
+- SPDX 2 `DESCRIBES` and `DESCRIBED_BY` between elements other than the
+  document both connect the described element
 - A relationship that the checker follows is now checked for a missing
   element at both ends, in SPDX 2 (`spdxElementId`) and SPDX 3 (`from`), and
   a missing root is reported; a missing element is listed once per element
@@ -61,6 +68,13 @@ and this project adheres to [Semantic Versioning][semver].
 - Releases publish to PyPI only after the SBOM is validated; release files are
   attached, signed and attested after the publish, and can be re-run if that
   fails
+
+### Deprecated
+
+- `VALID_SPDX2_COMPOSITION_RELATIONSHIPS` and
+  `VALID_SPDX3_COMPOSITION_RELATIONSHIPS` keep their 6.0.0 values but are no
+  longer used; use `SPDX2_RELATIONSHIP_TRAVERSAL` and
+  `SPDX3_RELATIONSHIP_TRAVERSAL`
 
 [#478]: https://github.com/spdx/ntia-conformance-checker/pull/478
 [#481]: https://github.com/spdx/ntia-conformance-checker/issues/481
