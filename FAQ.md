@@ -63,7 +63,7 @@ Followed relationships:
 | SPDX 3 type | SPDX 2, walked A to B | SPDX 2, walked B to A | Parent to child | Dependency |
 | --- | --- | --- | --- | --- |
 | `contains` | `CONTAINS` | `CONTAINED_BY` | Whole to part | Yes |
-| `hasOptionalComponent` | | `OPTIONAL_COMPONENT_OF` | Whole to part | No |
+| `hasOptionalComponent` | | `OPTIONAL_COMPONENT_OF` | Whole to part | Yes |
 | `packagedBy` | | `PACKAGE_OF` | Element to its package | No |
 | `dependsOn` | `DEPENDS_ON` | `DEPENDENCY_OF`, `BUILD_`, `DEV_`, `RUNTIME_`, `TEST_DEPENDENCY_OF` | Dependent to dependency | Yes |
 | `hasOptionalDependency` | | `OPTIONAL_DEPENDENCY_OF` | Dependent to dependency | Yes |
