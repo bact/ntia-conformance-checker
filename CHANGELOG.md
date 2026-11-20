@@ -57,6 +57,9 @@ and this project adheres to [Semantic Versioning][semver].
 - Releases publish to PyPI only after the SBOM is validated; release files are
   attached, signed and attested after the publish, and can be re-run if that
   fails
+- SPDX 3 roots are the `SpdxDocument` `rootElement` and `describes`
+  targets, as in SPDX 2; an SBOM that links its root from the
+  `SpdxDocument` by another type, such as `contains`, must use one of these
 
 ### Deprecated
 

@@ -636,8 +636,12 @@ def test_spdx2_external_element_at_either_end(
             ("DOC", "describes", "missing-root"),
             {"DOC": ["missing-root"]},
         ),
+        (
+            ("DOC", "contains", "missing-child"),
+            {"DOC": ["missing-child"]},
+        ),
     ],
-    ids=["contains-missing-from", "both-missing", "missing-root"],
+    ids=["contains-missing-from", "both-missing", "missing-root", "doc-contains"],
 )
 def test_spdx3_missing_from_or_root(
     tmp_path: Path,
@@ -653,6 +657,35 @@ def test_spdx3_missing_from_or_root(
         for k, vs in expected_unknown_edges.items()
     }
     assert "Traversal bug" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("spdx3_type", "spdx2_type", "connected"),
+    [
+        ("describes", RelationshipType.DESCRIBES, True),
+        ("contains", RelationshipType.CONTAINS, False),
+        ("dependsOn", RelationshipType.DEPENDS_ON, False),
+    ],
+    ids=["describes", "contains", "depends-on"],
+)
+def test_only_describes_from_document_marks_root(
+    tmp_path: Path,
+    spdx3_type: str,
+    spdx2_type: RelationshipType,
+    connected: bool,
+) -> None:
+    """Only describes from the document marks a root, in SPDX 3 as in SPDX 2."""
+    sbom = _spdx3_checker_with(tmp_path, [("DOC", spdx3_type, "pkg")])
+    pkg_id = _spdx3_element_id("pkg")
+    assert (pkg_id in sbom.reachable_component_ids) is connected
+    assert (pkg_id in sbom.floating_component_ids) is not connected
+
+    doc = _make_spdx2_doc(
+        ["SPDXRef-pkg"], [("SPDXRef-DOCUMENT", spdx2_type, "SPDXRef-pkg")]
+    )
+    reachable, floating, _, _ = analyze_graph_connectivity("spdx2", doc)
+    assert ("SPDXRef-pkg" in reachable) is connected
+    assert ("SPDXRef-pkg" in floating) is not connected
 
 
 def test_spdx2_document_alias_is_known(caplog: pytest.LogCaptureFixture) -> None:

@@ -539,14 +539,27 @@ def _extract_spdx3_collection_edges(
     graph.written_relationships.extend((col_id, root_id) for root_id in root_ids)
 
 
+def _is_spdx3_describes_from(obj: spdx3.Relationship, element_id: str) -> bool:
+    """Whether a relationship is ``describes`` from the given element."""
+    rel_type = getattr(obj, "relationshipType", None)
+    from_id = get_spdx3_element_id(getattr(obj, "from_", None))
+    return rel_type == spdx3.RelationshipType.describes and from_id == element_id
+
+
 def _build_spdx3_graph(
     object_set: spdx3.SHACLObjectSet, spdx3_doc: spdx3.SpdxDocument | None
 ) -> _Graph:
     """
     Build the relationship graph for SPDX 3.
 
-    Roots are the ``SpdxDocument`` ``rootElement`` and the ``to`` of any
-    relationship from it; each collection links to its own ``rootElement``.
+    Roots are the ``SpdxDocument`` ``rootElement`` and the ``to`` of each
+    ``describes`` relationship from it, the SPDX 3 form of SPDX 2
+    ``DESCRIBES`` and ``DESCRIBED_BY`` (see ``_get_spdx2_root_id``). SPDX
+    3.0.1 Core/Vocabularies/RelationshipType "describes": "To denote the
+    root(s) of a tree of elements in a collection, the rootElement property
+    should be used." Any other relationship from the ``SpdxDocument`` is
+    handled as between other elements; the document is not itself reached,
+    so it marks no root. Each collection links to its own ``rootElement``.
 
     Returns:
         _Graph: The graph; written relationships are (from, to).
@@ -566,18 +579,12 @@ def _build_spdx3_graph(
     for obj in object_set.objects:
         # Capture explicit relationships from Relationship objects
         if isinstance(obj, spdx3.Relationship):
-            from_id = get_spdx3_element_id(getattr(obj, "from_", None))
-
-            # If a relationship originates from the Document itself,
-            # its targets are treated as Roots.
-            if doc_id and from_id == doc_id:
+            if doc_id and _is_spdx3_describes_from(obj, doc_id):
                 to_ids = [
                     t for t in map(get_spdx3_element_id, getattr(obj, "to", [])) if t
                 ]
                 graph.roots.extend(to_ids)
                 graph.written_relationships.extend((doc_id, to_id) for to_id in to_ids)
-
-            # Normal relationships between packages build the map
             else:
                 _extract_spdx3_relationship_edges(obj, graph)
 

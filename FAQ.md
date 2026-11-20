@@ -52,9 +52,11 @@ Roots:
 - SPDX 2: `SPDXRef-DOCUMENT DESCRIBES A` or `A DESCRIBED_BY SPDXRef-DOCUMENT`
   (§11.1 Table 68); `SPDXRef-DOCUMENT` is accepted even if the document has
   another ID (§6.3).
-- SPDX 3: the `SpdxDocument` `rootElement` and the `to` of any relationship
-  from it; each collection, such as an `Sbom`, also links to its
-  `rootElement`.
+- SPDX 3: the `SpdxDocument` `rootElement`, and A in `SpdxDocument describes
+  A`, the SPDX 3 type for `DESCRIBES` and `DESCRIBED_BY`; for roots,
+  [SPDX 3.0.1][spdx-3.0.1-reltype] `describes` says `rootElement` "should be
+  used". Other types from the `SpdxDocument` mark no root. Each collection,
+  such as an `Sbom`, also links to its `rootElement`.
 
 Followed relationships:
 
