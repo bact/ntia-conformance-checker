@@ -57,6 +57,8 @@ and this project adheres to [Semantic Versioning][semver].
 - Releases publish to PyPI only after the SBOM is validated; release files are
   attached, signed and attested after the publish, and can be re-run if that
   fails
+- README lists where the FSCT3 checks are weaker or stricter than FSCT3
+  "minimum expected", such as the dependency relationship check
 
 ### Deprecated
 
