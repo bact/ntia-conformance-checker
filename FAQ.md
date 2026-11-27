@@ -8,9 +8,10 @@ modules rather than using `pip`. Please try using `pip`.
 **Q2: Why does my SPDX 3 SBOM fail the BSI compliance check for "deployable form
 URIs" when I copied the example from the BSI document?**
 
-A: The BSI TR-03183-2 document contains an example where `binaryArtifact` is
-used as a direct property on a file. However, the official SPDX 3.0.1
-specification strictly defines `binaryArtifact` as an `ExternalRefType`.
+A: BSI TR-03183-2 v2.1.0 §8.2 Table 11 has an example where
+`binaryArtifact` is used as a direct property on a file. However, the official
+SPDX 3.0.1 specification strictly defines `binaryArtifact` as an
+`ExternalRefType`.
 To pass compliance, you must define it inside an `externalRef` array.
 
 **Q3: I am getting a "NotImplementedError: software_SoftwareArtifact is abstract
