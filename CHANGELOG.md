@@ -20,8 +20,13 @@ and this project adheres to [Semantic Versioning][semver].
 - `--comply bsi` on SPDX 2 input reports why it fails: BSI TR-03183-2
   v2.1.0 §4 "SBOM formats" requires SPDX 3.0.1 or higher. The format is the
   only requirement listed, and the other checks are skipped ([#502])
+- BSI "Distribution Filenames" no longer fails a component without a
+  distribution file, such as a logical component; BSI TR-03183-2 v2.1.0
+  §3.2.2 does not require a filename for one. The hash and structured
+  property checks already skip such components ([#503])
 
 [#502]: https://github.com/spdx/ntia-conformance-checker/pull/502
+[#503]: https://github.com/spdx/ntia-conformance-checker/pull/503
 
 ## [6.1.0] - 2026-11-26
 

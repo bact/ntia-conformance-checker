@@ -63,11 +63,19 @@ Where the FSCT3 checks differ from FSCT3 "minimum expected":
 - Stricter: SBOM type is required; clause 2.2.1.3 "Type" calls it optional and
   an aspirational goal.
 
-BSI TR-03183-2 introduces stricter requirements for component files and relationships, including:
-- SHA-512 Hashes for deployable components
-- Structured component properties (e.g., container, firmware)
-- Strict concluded licensing targets
-- Explicit dependency completeness definitions
+BSI TR-03183-2 v2.1.0 adds requirements for component files and
+relationships, including:
+
+- SPDX 3.0.1 or higher: §4 "SBOM formats" does not accept SPDX 2, so an
+  SPDX 2 SBOM always fails `--comply bsi`
+- SHA-512 hash of the deployable component: §5.2.2 Table 3
+- Executable, archive and structured properties (e.g. container, firmware):
+  §5.2.2 Table 3
+- Distribution licences as SPDX license expressions: §5.2.2 Table 3, §6.1
+- Dependencies with stated completeness: §5.2.2 Table 3 "Dependencies on
+  other components"
+- §5.2.4 fields ("MUST, if it exists") are reported as warnings and §5.2.5
+  fields (MAY) as optional; neither affects compliance
 
 Mappings:
 
@@ -81,7 +89,7 @@ Mappings:
 
 > [!NOTE]
 > ### BSI TR-03183-2 Implementation Notes
-> To ensure strict compatibility with the official SPDX 3.0.1 specification, this checker adapts two of the examples provided in the BSI TR-03183-2 v2.1.0 document:
+> To ensure strict compatibility with the official SPDX 3.0.1 specification, this checker adapts two of the examples in BSI TR-03183-2 v2.1.0 §8.2 Table 11:
 > 
 > * **Deployable URIs:** `binaryArtifact` is evaluated strictly as an `ExternalRefType` inside an `externalRef` array (rather than a direct property of `software_File`).
 > * **Source Code URIs:** Artifacts must be defined using concrete subclasses (e.g., `software_File`, `software_Package`, `software_Snippet`) instead of the abstract `software_SoftwareArtifact` class.
@@ -281,6 +289,5 @@ Check out the [frequently asked questions](./FAQ.md) document.
 [ntia]: https://www.ntia.gov/report/2021/minimum-elements-software-bill-materials-sbom
 [ntia-spdx23]: https://spdx.github.io/spdx-spec/v2.3/how-to-use/#k22-mapping-ntia-minimum-elements-to-spdx-fields
 [fsct3]: https://www.cisa.gov/resources-tools/resources/framing-software-component-transparency-2024
-[bsi]: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03183/BSI-TR-03183-2_v2_1_0.html
 [sbom-reqs]: https://drive.google.com/file/d/14HZGYD7pSSWEmtaHZzWrzPhxCXaCnloJ/view
 [pypi]: https://pypi.org/project/ntia-conformance-checker/
